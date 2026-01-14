@@ -1,38 +1,28 @@
-# Spark Physical Operators Reference
+# Operators Reference
 
-This section documents Apache Spark SQL physical operators - the execution units that process data.
+Physical operators (SparkPlans) are the execution units that process data in Spark SQL.
 
-## What are Physical Operators?
+## All Operators
 
-Physical operators (also called SparkPlans) are the nodes in the physical query plan that actually execute data processing. Each operator:
-
-- Takes input from child operators (or data sources)
-- Applies transformations or aggregations
-- Produces output for parent operators
-- Reports execution metrics
-
-## Operator Categories
-
-### Joins
-- [BroadcastHashJoinExec](broadcast_hash_join_exec.md) - Hash join with broadcast
-
-### Aggregation
-- [ObjectHashAggregateExec](object_hash_aggregate_exec.md) - Object-based hash aggregation
-- [MergingSessionsExec](merging_sessions_exec.md) - Session window merging
-- [UpdatingSessionsExec](updating_sessions_exec.md) - Session window updates
-
-### Basic Operations
-- [ProjectExec](project_exec.md) - Column projection
-- [SortExec](sort_exec.md) - Data sorting
-- [GenerateExec](generate_exec.md) - Explode/flatten arrays
-- [ExpandExec](expand_exec.md) - GROUPING SETS expansion
-
-### Limits
-- [TakeOrderedAndProjectExec](take_ordered_and_project_exec.md) - Top-N with projection
-
-### Code Generation
-- [WholeStageCodegenExec](whole_stage_codegen_exec.md) - Whole-stage codegen wrapper
-
----
-
-*More operators are documented as they are generated. Run `python scripts/generate_spark_reference.py --type operators` to generate additional pages.*
+- [BroadcastExchangeExec](broadcast_exchange_exec.md)
+- [BroadcastHashJoinExec](broadcast_hash_join_exec.md)
+- [CartesianProductExec](cartesian_product_exec.md)
+- [CoalesceExec](coalesce_exec.md)
+- [ExpandExec](expand_exec.md)
+- [FilterExec](filter_exec.md)
+- [GenerateExec](generate_exec.md)
+- [MergingSessionsExec](merging_sessions_exec.md)
+- [ObjectHashAggregateExec](object_hash_aggregate_exec.md)
+- [ProjectExec](project_exec.md)
+- [RangeExec](range_exec.md)
+- [ReusedExchangeExec](reused_exchange_exec.md)
+- [SampleExec](sample_exec.md)
+- [ShuffleExchangeExec](shuffle_exchange_exec.md)
+- [ShuffledHashJoinExec](shuffled_hash_join_exec.md)
+- [SortExec](sort_exec.md)
+- [SortMergeJoinExec](sort_merge_join_exec.md)
+- [TakeOrderedAndProjectExec](take_ordered_and_project_exec.md)
+- [UnionExec](union_exec.md)
+- [UpdatingSessionsExec](updating_sessions_exec.md)
+- [WholeStageCodegenExec](whole_stage_codegen_exec.md)
+- [WindowGroupLimitExec](window_group_limit_exec.md)

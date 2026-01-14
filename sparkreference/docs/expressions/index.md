@@ -1,64 +1,64 @@
-# Spark Expressions Reference
+# Expressions Reference
 
-This section documents Apache Spark SQL expressions - the building blocks of query evaluation.
+Catalyst expressions are the building blocks of Spark SQL query execution.
 
-## What are Expressions?
+## All Expressions
 
-Expressions in Spark SQL are nodes in the query tree that can be evaluated to produce a value. They include:
-
-- **Arithmetic operations** - Add, Subtract, Multiply, Divide
-- **Comparisons** - EqualTo, LessThan, GreaterThan
-- **Logical operations** - And, Or, Not
-- **String functions** - Substring, Concat, Upper, Lower
-- **Aggregate functions** - Sum, Count, Average, Max, Min
-- **Window functions** - RowNumber, Rank, Lead, Lag
-- **Type conversions** - Cast, implicit coercions
-
-## Expression Categories
-
-### Grouping & Aggregation
-- [Grouping](grouping.md) - Check if column is aggregated
-- [GroupingID](grouping_id.md) - Get grouping bitmask
-
-### Interval Operations
-- [MakeInterval](make_interval.md) - Create interval from components
-- [MakeDTInterval](make_dt_interval.md) - Create day-time interval
-- [MakeYMInterval](make_ym_interval.md) - Create year-month interval
-- [TryMakeInterval](try_make_interval.md) - Safe interval creation
-- [MultiplyYMInterval](multiply_ym_interval.md) - Multiply year-month interval
-- [MultiplyDTInterval](multiply_dt_interval.md) - Multiply day-time interval
-- [DivideYMInterval](divide_ym_interval.md) - Divide year-month interval
-- [DivideDTInterval](divide_dt_interval.md) - Divide day-time interval
-
-### Bitwise Operations
-- [BitwiseAnd](bitwise_and.md) - Bitwise AND
-- [BitwiseOr](bitwise_or.md) - Bitwise OR
-- [BitwiseXor](bitwise_xor.md) - Bitwise XOR
-- [BitwiseNot](bitwise_not.md) - Bitwise NOT
-- [BitwiseCount](bitwise_count.md) - Count set bits
-- [BitwiseGet](bitwise_get.md) - Get specific bit
-
-### String Formatting
-- [ToCharacter](to_character.md) - Format number as string
-
-### Input Metadata
-- [InputFileName](input_file_name.md) - Current input file name
-- [InputFileBlockStart](input_file_block_start.md) - File block start offset
-- [InputFileBlockLength](input_file_block_length.md) - File block length
-
-### System Functions
-- [SparkPartitionID](spark_partition_id.md) - Current partition ID
-- [MonotonicallyIncreasingID](monotonically_increasing_id.md) - Generate unique IDs
-- [DirectShufflePartitionID](direct_shuffle_partition_id.md) - Shuffle partition ID
-
-### Sorting
-- [SortOrder](sort_order.md) - Sort specification
-- [SortPrefix](sort_prefix.md) - Sort prefix computation
-
-### Other
-- [NamedArgumentExpression](named_argument_expression.md) - Named function arguments
-- [PipeExpression](pipe_expression.md) - Pipe operator support
-
----
-
-*More expressions are documented as they are generated. Run `python scripts/generate_spark_reference.py --type expressions` to generate additional pages.*
+- [ApplyFunctionExpression](apply_function_expression.md)
+- [BitwiseAnd](bitwise_and.md)
+- [BitwiseCount](bitwise_count.md)
+- [BitwiseGet](bitwise_get.md)
+- [BitwiseNot](bitwise_not.md)
+- [BitwiseOr](bitwise_or.md)
+- [BitwiseXor](bitwise_xor.md)
+- [CsvToStructs](csv_to_structs.md)
+- [DirectShufflePartitionId](direct_shuffle_partition_id.md)
+- [DivideDtInterval](divide_dt_interval.md)
+- [DivideYmInterval](divide_ym_interval.md)
+- [Ewm](ewm.md)
+- [FromProtobuf](from_protobuf.md)
+- [Grouping](grouping.md)
+- [GroupingId](grouping_id.md)
+- [HllSketchEstimate](hll_sketch_estimate.md)
+- [HllUnion](hll_union.md)
+- [InputFileBlockLength](input_file_block_length.md)
+- [InputFileBlockStart](input_file_block_start.md)
+- [InputFileName](input_file_name.md)
+- [Lag](lag.md)
+- [Lead](lead.md)
+- [MakeDtInterval](make_dt_interval.md)
+- [MakeInterval](make_interval.md)
+- [MakeYmInterval](make_ym_interval.md)
+- [MonotonicallyIncreasingId](monotonically_increasing_id.md)
+- [MultiplyDtInterval](multiply_dt_interval.md)
+- [MultiplyYmInterval](multiply_ym_interval.md)
+- [NamedArgumentExpression](named_argument_expression.md)
+- [NthValue](nth_value.md)
+- [NullIndex](null_index.md)
+- [PipeExpression](pipe_expression.md)
+- [PrettyPythonUdf](pretty_python_udf.md)
+- [PythonUdaf](python_udaf.md)
+- [PythonUdf](python_udf.md)
+- [PythonUdtf](python_udtf.md)
+- [SchemaOfCsv](schema_of_csv.md)
+- [SemiStructuredExtract](semi_structured_extract.md)
+- [SortOrder](sort_order.md)
+- [SortPrefix](sort_prefix.md)
+- [SparkPartitionId](spark_partition_id.md)
+- [StructsToCsv](structs_to_csv.md)
+- [ThetaDifference](theta_difference.md)
+- [ThetaIntersection](theta_intersection.md)
+- [ThetaSketchEstimate](theta_sketch_estimate.md)
+- [ThetaUnion](theta_union.md)
+- [ToCharacter](to_character.md)
+- [ToProtobuf](to_protobuf.md)
+- [TryAdd](try_add.md)
+- [TryDivide](try_divide.md)
+- [TryEval](try_eval.md)
+- [TryMakeInterval](try_make_interval.md)
+- [TryMod](try_mod.md)
+- [TryMultiply](try_multiply.md)
+- [TrySubtract](try_subtract.md)
+- [UnresolvedWindowExpression](unresolved_window_expression.md)
+- [WindowExpression](window_expression.md)
+- [WindowSpecDefinition](window_spec_definition.md)
