@@ -43,7 +43,7 @@ def main():
     # Extract on server
     run_command([
         'ssh', '-i', ssh_key, server,
-        'cd /var/www/sparkreference.com ; tar xzf /home/ubuntu/sparkreference.tgz'
+        'cd /var/www/sparkreference.io ; tar xzf /home/ubuntu/sparkreference.tgz'
     ])
 
     # Cleanup local tarball

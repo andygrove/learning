@@ -1,7 +1,6 @@
 site_name: Spark Internals Reference
 site_description: Reference guide to Apache Spark SQL expressions and operators
-site_url: https://example.com/sparkreference
-docs_dir: .
+site_url: https://sparkreference.io
 
 theme:
   name: material
@@ -36,13 +35,93 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - tables
-  - admonitions
+  - admonition
   - toc:
       permalink: true
 
 nav:
-  - Home: README.md
+  - Home: index.md
   - Expressions:
-    - expressions/index.md
+    - Overview: expressions/index.md
+    - ApplyFunctionExpression: expressions/apply_function_expression.md
+    - BitwiseAnd: expressions/bitwise_and.md
+    - BitwiseCount: expressions/bitwise_count.md
+    - BitwiseGet: expressions/bitwise_get.md
+    - BitwiseNot: expressions/bitwise_not.md
+    - BitwiseOr: expressions/bitwise_or.md
+    - BitwiseXor: expressions/bitwise_xor.md
+    - CsvToStructs: expressions/csv_to_structs.md
+    - DirectShufflePartitionId: expressions/direct_shuffle_partition_id.md
+    - DivideDtInterval: expressions/divide_dt_interval.md
+    - DivideYmInterval: expressions/divide_ym_interval.md
+    - Ewm: expressions/ewm.md
+    - FromProtobuf: expressions/from_protobuf.md
+    - Grouping: expressions/grouping.md
+    - GroupingId: expressions/grouping_id.md
+    - HllSketchEstimate: expressions/hll_sketch_estimate.md
+    - HllUnion: expressions/hll_union.md
+    - InputFileBlockLength: expressions/input_file_block_length.md
+    - InputFileBlockStart: expressions/input_file_block_start.md
+    - InputFileName: expressions/input_file_name.md
+    - Lag: expressions/lag.md
+    - Lead: expressions/lead.md
+    - MakeDtInterval: expressions/make_dt_interval.md
+    - MakeInterval: expressions/make_interval.md
+    - MakeYmInterval: expressions/make_ym_interval.md
+    - MonotonicallyIncreasingId: expressions/monotonically_increasing_id.md
+    - MultiplyDtInterval: expressions/multiply_dt_interval.md
+    - MultiplyYmInterval: expressions/multiply_ym_interval.md
+    - NamedArgumentExpression: expressions/named_argument_expression.md
+    - NthValue: expressions/nth_value.md
+    - NullIndex: expressions/null_index.md
+    - PipeExpression: expressions/pipe_expression.md
+    - PrettyPythonUdf: expressions/pretty_python_udf.md
+    - PythonUdaf: expressions/python_udaf.md
+    - PythonUdf: expressions/python_udf.md
+    - PythonUdtf: expressions/python_udtf.md
+    - SchemaOfCsv: expressions/schema_of_csv.md
+    - SemiStructuredExtract: expressions/semi_structured_extract.md
+    - SortOrder: expressions/sort_order.md
+    - SortPrefix: expressions/sort_prefix.md
+    - SparkPartitionId: expressions/spark_partition_id.md
+    - StructsToCsv: expressions/structs_to_csv.md
+    - ThetaDifference: expressions/theta_difference.md
+    - ThetaIntersection: expressions/theta_intersection.md
+    - ThetaSketchEstimate: expressions/theta_sketch_estimate.md
+    - ThetaUnion: expressions/theta_union.md
+    - ToCharacter: expressions/to_character.md
+    - ToProtobuf: expressions/to_protobuf.md
+    - TryAdd: expressions/try_add.md
+    - TryDivide: expressions/try_divide.md
+    - TryEval: expressions/try_eval.md
+    - TryMakeInterval: expressions/try_make_interval.md
+    - TryMod: expressions/try_mod.md
+    - TryMultiply: expressions/try_multiply.md
+    - TrySubtract: expressions/try_subtract.md
+    - UnresolvedWindowExpression: expressions/unresolved_window_expression.md
+    - WindowExpression: expressions/window_expression.md
+    - WindowSpecDefinition: expressions/window_spec_definition.md
   - Operators:
-    - operators/index.md
+    - Overview: operators/index.md
+    - BroadcastExchangeExec: operators/broadcast_exchange_exec.md
+    - BroadcastHashJoinExec: operators/broadcast_hash_join_exec.md
+    - CartesianProductExec: operators/cartesian_product_exec.md
+    - CoalesceExec: operators/coalesce_exec.md
+    - ExpandExec: operators/expand_exec.md
+    - FilterExec: operators/filter_exec.md
+    - GenerateExec: operators/generate_exec.md
+    - MergingSessionsExec: operators/merging_sessions_exec.md
+    - ObjectHashAggregateExec: operators/object_hash_aggregate_exec.md
+    - ProjectExec: operators/project_exec.md
+    - RangeExec: operators/range_exec.md
+    - ReusedExchangeExec: operators/reused_exchange_exec.md
+    - SampleExec: operators/sample_exec.md
+    - ShuffleExchangeExec: operators/shuffle_exchange_exec.md
+    - ShuffledHashJoinExec: operators/shuffled_hash_join_exec.md
+    - SortExec: operators/sort_exec.md
+    - SortMergeJoinExec: operators/sort_merge_join_exec.md
+    - TakeOrderedAndProjectExec: operators/take_ordered_and_project_exec.md
+    - UnionExec: operators/union_exec.md
+    - UpdatingSessionsExec: operators/updating_sessions_exec.md
+    - WholeStageCodegenExec: operators/whole_stage_codegen_exec.md
+    - WindowGroupLimitExec: operators/window_group_limit_exec.md
