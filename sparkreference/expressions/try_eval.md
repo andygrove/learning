@@ -1,64 +1,79 @@
 # TryEval
 
 ## Overview
-`TryEval` is a Spark Catalyst unary expression that wraps another expression and catches any exceptions during evaluation, returning `null` instead of propagating the exception. It provides a safe evaluation mechanism for expressions that might throw runtime exceptions, making them null-tolerant.
+TryEval is a Spark Catalyst unary expression that wraps another expression in exception handling logic. It evaluates its child expression and returns the result if successful, or null if any exception occurs during evaluation. This expression provides a safe way to handle potentially failing operations without causing query failures.
 
 ## Syntax
-This is an internal Catalyst expression not directly exposed in SQL. It's used internally by other "try_" functions like `try_add`, `try_divide`, etc.
+This is an internal Catalyst expression primarily used within Spark's query engine. It may be generated automatically by the optimizer or used in DataFrame operations that require exception-safe evaluation.
 
 ```scala
-TryEval(child: Expression)
+// Internal usage in Catalyst expressions
+TryEval(childExpression)
 ```
 
 ## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| child | Expression | The expression to evaluate safely, catching any exceptions |
+| child | Expression | The child expression to evaluate within a try-catch block |
 
 ## Return Type
-Returns the same data type as the child expression, but the result is always nullable.
+Returns the same data type as the child expression, but the result is always nullable regardless of the child's nullability.
 
 ## Supported Data Types
-Supports any data type that the child expression supports, as it acts as a transparent wrapper around the child expression.
+Supports all data types that the child expression supports, including:
+- All primitive types (Boolean, Byte, Short, Integer, Long, Float, Double)
+- Complex types (String, Binary, Array, Map, Struct)
+- Date/Time types (Date, Timestamp, CalendarInterval)
+- Decimal types
 
 ## Algorithm
-- Attempts to evaluate the child expression normally
-- If evaluation succeeds, returns the child's result (including null values)
-- If any exception is thrown during evaluation, catches it and returns null
-- Forces the result to be nullable regardless of the child expression's nullability
-- In code generation, wraps the child's generated code in a try-catch block
+- Initialize result variables with null flag set to true and default value for the data type
+- Execute the child expression within a try-catch block
+- If evaluation succeeds: copy the child's null flag and result value
+- If any exception occurs: leave result as null (isNull = true)
+- Return the final result with appropriate null flag
 
 ## Partitioning Behavior
-- Preserves partitioning as it doesn't change the logical evaluation of data distribution
-- Does not require shuffle operations
-- Acts as a pass-through wrapper that doesn't affect data locality
+- **Preserves partitioning**: Yes, this expression does not change data distribution
+- **Requires shuffle**: No, evaluation is performed locally on each partition
+- Acts as a pass-through for partitioning schemes since it only affects individual row values
 
 ## Edge Cases
-- **Null handling**: If child expression returns null normally, passes through the null value
-- **Exception handling**: Any exception (runtime exceptions, arithmetic errors, etc.) results in null
-- **Nullability**: Always returns nullable results, even if child expression is non-nullable
-- **Null intolerant**: Marked as `nullIntolerant = true`, meaning it doesn't produce null for null inputs in the traditional sense
+- **Null handling**: If child expression returns null normally, TryEval preserves that null
+- **Exception handling**: Any exception (RuntimeException, ArithmeticException, etc.) results in null output
+- **Nested exceptions**: Catches all Exception types, including those from deeply nested expression trees
+- **Nullability override**: Always returns nullable results even if child expression is non-nullable
+- **Code generation**: Exception handling is preserved in generated code with proper try-catch blocks
 
 ## Code Generation
-Supports full code generation (Tungsten). Generates Java code that wraps the child expression's generated code in a try-catch block, with proper initialization of result variables to default values before attempting evaluation.
+This expression supports full code generation (Tungsten). The generated code includes:
+- Proper Java try-catch blocks around child expression evaluation
+- Initialization of null flags and default values
+- Exception-safe variable assignments
+- No fallback to interpreted mode required
 
 ## Examples
-```scala
-// Internal usage - not directly callable in SQL
-// Used by try_add internally:
-val safeAdd = TryEval(Add(col1, col2, EvalMode.ANSI))
+```sql
+-- TryEval is typically generated internally, not directly accessible in SQL
+-- However, it might be used internally for operations like:
+SELECT CASE WHEN some_condition THEN risky_operation(col) END FROM table
 ```
 
-```sql
--- TryEval is used internally by functions like:
-SELECT try_add(2147483647, 1);  -- Returns NULL instead of overflow error
-SELECT try_divide(10, 0);       -- Returns NULL instead of division by zero error
+```scala
+// Internal Catalyst usage example
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.types._
+
+// Wrap a potentially failing expression
+val riskyExpr = Divide(Literal(10), col("denominator"))
+val safeExpr = TryEval(riskyExpr)
+
+// The safe expression will return null instead of throwing division by zero
 ```
 
 ## See Also
-- `try_add` - Safe addition using TryEval internally
-- `try_divide` - Safe division using TryEval internally  
-- `try_subtract` - Safe subtraction using TryEval internally
-- `try_multiply` - Safe multiplication using TryEval internally
-- `try_to_binary` - Safe binary conversion using TryEval internally
-- `RuntimeReplaceable` - Pattern used by the try_* functions that utilize TryEval
+- **Coalesce**: For handling null values with fallback options
+- **IfNull**: For null replacement logic  
+- **CaseWhen**: For conditional expression evaluation
+- **UnaryExpression**: The base class that TryEval extends
+- **CodegenFallback**: Alternative approach for expressions that don't support code generation

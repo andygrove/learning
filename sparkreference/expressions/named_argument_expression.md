@@ -1,93 +1,62 @@
 # NamedArgumentExpression
 
 ## Overview
-
-`NamedArgumentExpression` represents an argument expression to a routine call accompanied with an explicit reference to the corresponding argument name. This allows function arguments to be specified by name rather than position, enabling flexible argument ordering and improved readability. This expression is unevaluable and is replaced with its value during query analysis after argument list rearrangement.
+`NamedArgumentExpression` is a Catalyst expression that represents a named argument in routine calls, allowing arguments to be passed by name rather than position. This expression is used internally to support named parameter syntax in SQL functions, where arguments can be specified with explicit parameter names for better readability and flexibility.
 
 ## Syntax
-
 ```sql
-key => value
+function_name(parameter_name => value, ...)
 ```
 
-Where:
-- `key` is an identifier representing the argument name
-- `=>` is the fat arrow operator
-- `value` is any valid expression
-
 ## Arguments
-
 | Argument | Type | Description |
 |----------|------|-------------|
-| key | String | The name of the routine argument parameter |
-| value | Expression | The expression providing the value for the named argument |
+| key | String | The name of the routine argument/parameter |
+| value | Expression | The value expression for the routine argument |
 
 ## Return Type
-
-The return type matches the data type of the `value` expression, as determined by `value.dataType`. The `NamedArgumentExpression` itself acts as a transparent wrapper around the value expression's type.
+The return type matches the data type of the `value` expression. Since this is a wrapper expression, it inherits the data type from its child value expression.
 
 ## Supported Data Types
-
-Supports all data types since it accepts any `Expression` as its value. The supported data types are determined by the underlying value expression and the requirements of the target function that will receive the named argument.
+All data types are supported since `NamedArgumentExpression` acts as a wrapper around any underlying expression. The supported data types depend entirely on the wrapped `value` expression.
 
 ## Algorithm
-
-- Acts as a wrapper around a value expression with an associated parameter name
-- Extends `UnaryExpression` with the value expression as its single child
-- Marked as `Unevaluable` - cannot be directly evaluated in the execution engine
-- During analysis phase, the analyzer matches the key name to function parameter names
-- The expression is replaced with its value expression after argument reordering
-- Child expression resolution occurs recursively through normal analyzer rules
+- Acts as a unary expression wrapper around the value expression
+- Preserves the data type of the underlying value expression
+- Provides named parameter semantics for routine calls
+- Delegates all evaluation logic to the child value expression
+- Maintains the parameter name for proper argument binding during function resolution
 
 ## Partitioning Behavior
-
-- **Preserves partitioning**: Yes, as it's a transparent wrapper that gets replaced during analysis
-- **Requires shuffle**: No, the expression itself doesn't affect data distribution
-- The actual partitioning behavior depends on the target function that receives the resolved argument
+- **Preserves partitioning**: Yes, since it's a wrapper expression that doesn't modify data distribution
+- **Requires shuffle**: No, this expression doesn't trigger data shuffling as it only provides naming semantics
 
 ## Edge Cases
-
 - **Null handling**: Inherits null handling behavior from the wrapped value expression
-- **Empty input**: No special handling - delegates to the value expression
-- **Analysis phase**: Must be completely resolved and replaced before code generation
-- **Duplicate names**: Analyzer handles validation of duplicate argument names in function calls
-- **Unmatched names**: Analyzer validates that named arguments match expected function parameters
+- **Empty input**: Behavior depends on the underlying value expression
+- **Unevaluable**: This expression extends `Unevaluable`, meaning it cannot be directly evaluated and must be processed/transformed during analysis phase
+- **Resolution dependency**: The value expression is resolved recursively by Analyzer rules (e.g., `ResolveFunctions` for built-in functions)
 
 ## Code Generation
-
-This expression does **not** support code generation (Tungsten). It is marked as `Unevaluable` and must be completely resolved and replaced with its value expression during the analysis phase before reaching code generation. Any attempt to evaluate this expression directly will result in an error.
+This expression does not support code generation as it extends `Unevaluable`. It serves as an intermediate representation during query analysis and is typically transformed or resolved before the code generation phase.
 
 ## Examples
-
 ```sql
--- Using named arguments with encode function
-SELECT encode("abc", charset => "utf-8");
-
--- Arguments can appear in any order
+-- Named arguments in encode function
 SELECT encode(charset => "utf-8", value => "abc");
 
--- Named arguments with complex expressions
-SELECT my_function(
-  param1 => col1 + col2,
-  param2 => CASE WHEN col3 > 0 THEN "positive" ELSE "negative" END
-);
+-- Named arguments with mixed positional and named parameters
+SELECT some_function(arg1 => 'value1', arg2 => 42);
 ```
 
 ```scala
-// DataFrame API usage (conceptual - actual API may vary)
-import org.apache.spark.sql.catalyst.expressions._
-
-// Creating a NamedArgumentExpression programmatically
+// This expression is primarily used internally during SQL parsing
+// and is not typically created directly in DataFrame API
 val namedArg = NamedArgumentExpression("charset", Literal("utf-8"))
-
-// The expression shows its structure
-namedArg.toString // Returns: "charset => utf-8"
-namedArg.dataType // Returns: StringType (from the Literal)
 ```
 
 ## See Also
-
-- `UnaryExpression` - Base class for expressions with a single child
+- `UnaryExpression` - Base class for expressions with single child
 - `Unevaluable` - Trait for expressions that cannot be directly evaluated
-- `ResolveFunctions` - Analyzer rule that resolves function calls and handles named arguments
-- Function call expressions that accept named arguments
+- `ResolveFunctions` - Analyzer rule that resolves function expressions
+- Expression resolution and analysis phases in Catalyst optimizer

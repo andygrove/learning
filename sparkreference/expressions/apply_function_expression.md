@@ -1,78 +1,83 @@
 # ApplyFunctionExpression
 
 ## Overview
-`ApplyFunctionExpression` is a Catalyst expression that wraps and evaluates user-defined scalar functions that implement the `ScalarFunction` interface. It serves as a bridge between Spark's external function API and the internal Catalyst expression evaluation system, allowing custom scalar functions to be seamlessly integrated into SQL queries and DataFrame operations.
+`ApplyFunctionExpression` is a Spark Catalyst expression that serves as a wrapper for executing user-defined scalar functions that implement the `ScalarFunction` interface. It provides a bridge between Spark's internal expression evaluation framework and external scalar function implementations, allowing custom functions to be seamlessly integrated into SQL queries and DataFrame operations.
 
 ## Syntax
 ```sql
--- SQL syntax depends on the registered function name
-SELECT custom_function(col1, col2, ...) FROM table;
+-- SQL usage (function name depends on registered scalar function)
+SELECT custom_function(column1, column2) FROM table
 ```
 
 ```scala
 // DataFrame API usage
-import org.apache.spark.sql.connector.catalog.functions.ScalarFunction
-df.select(expr("custom_function(col1, col2)"))
+import org.apache.spark.sql.catalyst.expressions.ApplyFunctionExpression
+// Typically used internally by Spark when scalar functions are applied
 ```
 
 ## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| `function` | `ScalarFunction[_]` | The user-defined scalar function instance to be applied |
-| `children` | `Seq[Expression]` | The input expressions that will be evaluated and passed to the scalar function |
+| function | ScalarFunction | The scalar function implementation to be executed |
+| children | Seq[Expression] | The input expressions that will be evaluated and passed as arguments to the scalar function |
 
 ## Return Type
-The return type is determined dynamically by calling `function.resultType()` on the wrapped `ScalarFunction` instance. The actual data type depends on the specific implementation of the user-defined function.
+The return type is determined by the `ScalarFunction`'s declared output data type via its `outputDataType()` method. This can be any valid Spark SQL data type including primitive types, complex types (arrays, maps, structs), or user-defined types.
 
 ## Supported Data Types
-Input data types are determined by the wrapped `ScalarFunction`'s `inputTypes()` method. The expression supports any data types that:
-- Are specified by the function's input type requirements via `function.inputTypes()`
-- Can be implicitly cast to the required types (due to `ImplicitCastInputTypes` trait)
-- Are compatible with Spark's internal data type system
+Supports all Spark SQL data types as input arguments, including:
+- Primitive types (IntegerType, StringType, DoubleType, BooleanType, etc.)
+- Temporal types (TimestampType, DateType)
+- Complex types (ArrayType, MapType, StructType)
+- Binary data (BinaryType)
+- Decimal types (DecimalType)
+
+The specific supported input types depend on the implementation of the wrapped `ScalarFunction`.
 
 ## Algorithm
-- Creates a reused `SpecificInternalRow` based on the function's input types for efficient memory usage
-- During evaluation, iterates through all child expressions and evaluates them against the input row
-- Populates the reused internal row with the evaluated child expression results
-- Delegates to the wrapped `ScalarFunction.produceResult()` method to compute the final result
-- Returns the function's computed result directly
+- Evaluates all child expressions to obtain input values for the scalar function
+- Converts Spark internal data representations to the format expected by the scalar function
+- Invokes the `ScalarFunction.produceResult()` method with the prepared input arguments
+- Converts the function result back to Spark's internal data representation
+- Returns the converted result value
 
 ## Partitioning Behavior
-- **Preserves partitioning**: This expression does not affect data partitioning as it operates row-by-row
-- **No shuffle required**: Evaluation is performed locally on each partition without requiring data movement
-- Partitioning behavior ultimately depends on how the expression is used within larger query plans
+- **Preserves partitioning**: This expression operates on individual rows and does not require data movement between partitions
+- **No shuffle required**: Evaluation is performed locally on each partition
+- **Partition-agnostic**: The same scalar function logic is applied consistently across all partitions
 
 ## Edge Cases
-- **Null handling**: Nullability is determined by `function.isResultNullable()` - the wrapped function controls null behavior
-- **Empty input**: Behavior depends on the specific `ScalarFunction` implementation when no arguments are provided
-- **Type mismatches**: Relies on implicit casting; incompatible types will cause runtime failures
-- **Non-deterministic functions**: Determinism is computed as the logical AND of function determinism and all children's determinism
+- **Null handling**: Null propagation behavior depends on the `ScalarFunction` implementation; by default, null inputs may produce null outputs unless explicitly handled
+- **Empty input behavior**: When child expressions evaluate to empty/null, the scalar function receives null values as arguments
+- **Type coercion**: Input arguments are automatically coerced to match the expected input types declared by the `ScalarFunction`
+- **Exception handling**: Runtime exceptions thrown by the scalar function will propagate and cause task failure
 
 ## Code Generation
-This expression extends `CodegenFallback`, meaning it **does not support** Tungsten code generation. All evaluation falls back to interpreted mode using the `eval()` method, which may result in slower performance compared to code-generated expressions.
+This expression extends `CodegenFallback`, which means it **does not support Tungsten code generation** and will always fall back to interpreted evaluation mode. Each row evaluation will involve method calls to the `ScalarFunction` implementation rather than generated bytecode.
 
 ## Examples
 ```sql
--- Assuming a registered UDF named 'my_custom_function'
-SELECT my_custom_function(age, name) FROM users;
-SELECT id, my_custom_function(salary * 1.1) FROM employees;
+-- Example with a hypothetical registered scalar function
+SELECT my_custom_hash(name, id) FROM users;
+
+-- Using with complex types
+SELECT my_array_processor(ARRAY(1, 2, 3)) FROM table;
 ```
 
 ```scala
-// Example with DataFrame API
-import org.apache.spark.sql.functions.expr
-df.select(expr("my_custom_function(col1, col2)"))
+// Example DataFrame API usage (internal)
+import org.apache.spark.sql.catalyst.expressions.ApplyFunctionExpression
+import org.apache.spark.sql.catalyst.expressions.Literal
+import org.apache.spark.sql.connector.catalog.functions.ScalarFunction
 
-// Direct usage in expression tree (internal API)
-val customFunc: ScalarFunction[String] = // ... implementation
-val expression = ApplyFunctionExpression(
-  function = customFunc,
-  children = Seq(col("input1").expr, col("input2").expr)
-)
+// This would typically be created internally by Spark's analyzer
+val scalarFunc: ScalarFunction = new MyCustomScalarFunction()
+val inputs = Seq(Literal("input1"), Literal(42))
+val applyExpr = ApplyFunctionExpression(scalarFunc, inputs)
 ```
 
 ## See Also
-- `ScalarFunction` - The interface that wrapped functions must implement
-- `UserDefinedExpression` - Parent trait for user-defined expressions
-- `ImplicitCastInputTypes` - Trait providing automatic type casting behavior
-- `CodegenFallback` - Trait for expressions that don't support code generation
+- `ScalarFunction` - The interface that defines scalar function implementations
+- `UnresolvedFunction` - Expression used during parsing before function resolution
+- `CallMethodViaReflection` - Alternative approach for calling external methods
+- `StaticInvoke` - Expression for calling static methods with code generation support

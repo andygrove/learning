@@ -1,66 +1,68 @@
 # DirectShufflePartitionID
 
 ## Overview
-DirectShufflePartitionID is a Spark Catalyst expression that passes through a partition ID value directly for use in shuffle partitioning operations. This expression is primarily used with RepartitionByExpression to allow users to explicitly specify target partition IDs rather than relying on hash-based partitioning algorithms.
+DirectShufflePartitionID is a Catalyst expression that enables direct specification of target partition IDs during shuffle operations. Unlike hash-based partitioning expressions, this allows explicit control over which partition each row is assigned to by evaluating a child expression that returns the target partition ID.
 
 ## Syntax
 ```scala
-// DataFrame API usage (internal - not directly exposed to users)
-DirectShufflePartitionID(partitionIdExpression)
+DirectShufflePartitionID(child: Expression)
 ```
 
 ## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| child | Expression | An expression that evaluates to an integral value representing the target partition ID |
+| child | Expression | An expression that evaluates to an integral type representing the target partition ID. Must be non-null and within valid partition range [0, numPartitions). |
 
 ## Return Type
-Returns the same data type as the child expression (must be an integral type).
+The expression returns the same data type as its child expression (typically an integral type like IntegerType or LongType).
 
 ## Supported Data Types
-- **Input**: IntegerType and other integral types
-- **Output**: Same as input type (integral types only)
+- **Input**: IntegerType only (enforced by `inputTypes: Seq[AbstractDataType] = IntegerType :: Nil`)
+- **Output**: Same as input (child.dataType)
 
 ## Algorithm
-- Takes a child expression that must evaluate to an integral type
-- Validates that the child expression is not null at evaluation time
-- Passes the partition ID value through directly without transformation
-- The resulting partition ID must be within the valid range [0, numPartitions)
-- Used internally by the partitioning subsystem to direct records to specific partitions
+- Extends UnaryExpression to operate on a single child expression
+- Implements ExpectsInputTypes to enforce IntegerType constraint on input
+- Marked as Unevaluable, meaning it cannot be directly evaluated in standard expression evaluation
+- Acts as a metadata wrapper indicating direct partition assignment intent
+- The actual partitioning logic is handled by the physical planning layer, not during expression evaluation
 
 ## Partitioning Behavior
-- **Partitioning Impact**: This expression is specifically designed to control partitioning behavior
-- **Shuffle Requirement**: Typically requires a shuffle operation when used with RepartitionByExpression
-- **Partitioning Preservation**: Does not preserve existing partitioning; creates new partitioning based on explicit partition IDs
+- **Preserves partitioning**: No, this expression is specifically designed to control partitioning
+- **Requires shuffle**: Yes, this expression is used during shuffle operations to directly assign partition IDs
+- **Partition assignment**: Enables explicit partition targeting rather than hash-based distribution
+- **Range validation**: Target partition IDs must be within [0, numPartitions) range
 
 ## Edge Cases
-- **Null Handling**: Expression is marked as non-nullable (`nullable = false`), indicating null values are not permitted
-- **Range Validation**: Partition IDs must be within [0, numPartitions) range, though validation occurs at runtime
-- **Type Enforcement**: Input must be integral type, enforced by `inputTypes = IntegerType :: Nil`
-- **Evaluation**: Marked as `Unevaluable`, meaning it's used for planning but not direct evaluation
+- **Null handling**: The expression is marked as non-nullable (`nullable: Boolean = false`), and the child expression must not evaluate to null
+- **Range validation**: Partition IDs outside [0, numPartitions) range will cause runtime errors
+- **Type enforcement**: Only IntegerType inputs are accepted; other types will be rejected during analysis
+- **Unevaluable nature**: Cannot be used in contexts requiring direct expression evaluation (e.g., SELECT clause projections)
 
 ## Code Generation
-This expression extends `Unevaluable`, indicating it does not support direct code generation or interpreted evaluation. It serves as a planning-time construct that is consumed by the partitioning subsystem rather than being evaluated row-by-row.
+This expression does not support code generation as it extends Unevaluable. It serves as a planning-time construct that gets processed during physical planning rather than during query execution. The actual partitioning logic is implemented in the shuffle operations themselves.
 
 ## Examples
-```scala
-// Internal usage example (not directly accessible to end users)
-import org.apache.spark.sql.catalyst.expressions._
-
-// Create expression with literal partition ID
-val partitionExpr = DirectShufflePartitionID(Literal(2))
-
-// Typically used within RepartitionByExpression
-// This would direct records to partition 2
+```sql
+-- DirectShufflePartitionID is not directly accessible via SQL
+-- It's used internally by the Catalyst optimizer for specific partitioning strategies
 ```
 
-```sql
--- No direct SQL syntax available
--- This is an internal Catalyst expression used by the optimizer
+```scala
+// Internal usage in Catalyst planning (not public API)
+import org.apache.spark.sql.catalyst.expressions._
+
+// This expression is typically created during physical planning
+val partitionExpr = DirectShufflePartitionID(Literal(2))
+// Used in shuffle operations to direct rows to partition 2
+
+// Note: This is not intended for direct user consumption
+// but rather as an internal optimization hint
 ```
 
 ## See Also
-- `RepartitionByExpression` - Primary consumer of this expression
-- `UnaryExpression` - Base class for single-child expressions
-- `ExpectsInputTypes` - Trait for type validation
-- `Unevaluable` - Marker for planning-only expressions
+- **HashPartitioning**: Standard hash-based partitioning for comparison
+- **RangePartitioning**: Range-based partitioning alternative
+- **UnaryExpression**: Base class for single-child expressions
+- **ExpectsInputTypes**: Trait for type constraint enforcement
+- **Unevaluable**: Marker trait for non-evaluable expressions used in planning

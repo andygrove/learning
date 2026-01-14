@@ -1,102 +1,84 @@
 # ToCharacter
 
 ## Overview
-
-The `ToCharacter` expression converts numeric decimal values to formatted string representations using a specified format pattern. It provides precise control over number formatting including decimal places, thousands separators, currency symbols, and sign handling, throwing an exception if the conversion fails.
+The `ToCharacter` expression converts decimal numbers to formatted string representations using a specified format pattern. It implements the `to_char` function that formats numeric values according to Oracle-style number formatting patterns with locale-aware formatting rules.
 
 ## Syntax
-
 ```sql
-TO_CHAR(expr, format)
+to_char(decimal_value, format_string)
 ```
 
 ```scala
-// DataFrame API
-df.select(expr("to_char(column_name, format_string)"))
+// DataFrame API usage
+import org.apache.spark.sql.functions._
+df.select(expr("to_char(decimal_column, 'format_pattern')"))
 ```
 
 ## Arguments
-
 | Argument | Type | Description |
 |----------|------|-------------|
-| `expr` | DecimalType | The numeric decimal value to be converted to a string |
-| `format` | StringType | The format pattern specifying how the number should be formatted (must be foldable/constant) |
+| decimal_value | DecimalType | The decimal number to be formatted |
+| format_string | StringType | The format pattern string (must be a foldable/constant expression) |
 
 ## Return Type
-
-Returns `StringType` - a formatted string representation of the input decimal value.
+Returns `StringType` - a formatted string representation of the input decimal number.
 
 ## Supported Data Types
-
-- **Input Expression**: DecimalType only
-- **Format Pattern**: StringType with collation support (must be a compile-time constant)
+- **Input**: DecimalType for the numeric value, StringType with collation support for the format pattern
+- **Output**: StringType with default string-producing expression behavior
+- The format string supports trim collation operations
 
 ## Algorithm
-
-- Validates that the format parameter is foldable (compile-time constant) during analysis phase
-- Creates a `ToNumberParser` instance with the uppercase format string and error-on-fail mode enabled
-- Converts the input decimal value to a formatted string using the parser's `format()` method
-- Supports format characters: '0', '9' (digits), '.', 'D' (decimal point), ',', 'G' (grouping), '$' (currency), 'S', 'MI' (signs), 'PR' (negative brackets)
-- Throws exceptions for invalid format patterns or conversion failures
+- The format string is parsed at initialization time using `ToNumberParser` with uppercase locale conversion
+- Input validation ensures the format pattern is a compile-time constant (foldable expression)
+- During evaluation, the decimal input is converted using the pre-compiled number formatter
+- Null inputs in either argument result in null output (null-intolerant behavior)
+- The formatter applies Oracle-style number formatting rules to generate the string output
 
 ## Partitioning Behavior
-
-- **Preserves Partitioning**: Yes, this is a row-level transformation that doesn't require data movement
-- **Shuffle Required**: No, operates independently on each row within partitions
+- **Preserves partitioning**: Yes, this is a row-level transformation that doesn't change data distribution
+- **Requires shuffle**: No, operates independently on each row within partitions
+- Safe for use in partition-preserving operations and can be pushed down in optimization
 
 ## Edge Cases
-
-- **Null Handling**: Returns null if either input expression or format pattern evaluates to null (null intolerant)
-- **Invalid Format**: Throws `QueryCompilationErrors` if format string is invalid during analysis
-- **Non-foldable Format**: Compilation error if format parameter is not a constant expression
-- **Null Format at Runtime**: Returns null if the format parser cannot be initialized
-- **Conversion Failures**: Throws runtime exceptions when formatting fails (errorOnFail = true)
+- **Null handling**: Returns null if either the decimal value or format string is null (nullIntolerant = true)
+- **Invalid format**: Compilation fails if the format string contains invalid patterns
+- **Non-foldable format**: Throws `DataTypeMismatch` error if format string is not a constant expression
+- **Runtime format validation**: Additional format validation occurs during the type checking phase
+- **Locale handling**: Format patterns are converted to uppercase using ROOT locale for consistency
 
 ## Code Generation
-
-Supports Tungsten code generation with optimized bytecode. The generated code:
-- Pre-initializes the `ToNumberParser` as a reference object in the code generation context
-- Performs null checks before invoking the formatter
-- Directly calls the parser's `format()` method on the decimal input
+Supports Tungsten code generation with optimized performance:
+- Pre-compiles the format parser as a referenced object in the generated code
+- Generates efficient null-checking logic that avoids unnecessary formatting calls
+- Directly calls the formatter's format method in generated code without interpretation overhead
+- Uses `CodeGenerator.javaType` and `CodeGenerator.defaultValue` for type-safe code generation
 
 ## Examples
-
 ```sql
--- Basic number formatting
-SELECT TO_CHAR(454, '999');
--- Result: '454'
+-- Format decimal with currency pattern
+SELECT to_char(1234.56, '$999,999.99') as formatted_currency;
 
--- Decimal formatting with padding
-SELECT TO_CHAR(454.00, '000D00');
--- Result: '454.00'
+-- Format with leading zeros
+SELECT to_char(42.7, '000.000') as padded_number;
 
--- Thousands separator
-SELECT TO_CHAR(12454, '99G999');
--- Result: '12,454'
-
--- Currency formatting
-SELECT TO_CHAR(78.12, '$99.99');
--- Result: '$78.12'
-
--- Negative number with trailing sign
-SELECT TO_CHAR(-12454.8, '99G999D9S');
--- Result: '12,454.8-'
+-- Scientific notation formatting
+SELECT to_char(0.00123, '9.999EEEE') as scientific;
 ```
 
 ```scala
 // DataFrame API usage
 import org.apache.spark.sql.functions._
 
-df.select(expr("to_char(amount, '$999,999.99')").as("formatted_amount"))
+// Format currency values
+df.select(expr("to_char(price, '$999,999.99')").alias("formatted_price"))
 
-// With column references
-df.select(expr("to_char(price * quantity, '999,999.00')").as("total"))
+// Format with specific decimal places
+df.select(expr("to_char(decimal_col, '999.999')").alias("formatted_decimal"))
 ```
 
 ## See Also
-
-- `ToNumber` - Parses formatted strings back to decimal values
-- `TryToNumber` - Similar to ToNumber but returns null on parse failures
-- `ToCharacterBuilder` - Expression builder that handles multiple data types including datetime and binary
-- `Cast` - General type conversion expression
-- `DateFormatClass` - For datetime formatting
+- `ToNumber` - Converts formatted strings back to numeric values
+- `FormatNumber` - Simpler numeric formatting with fixed patterns
+- `Cast` - Basic type conversion operations
+- `DecimalType` expressions for decimal arithmetic operations

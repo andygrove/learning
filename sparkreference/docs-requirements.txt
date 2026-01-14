@@ -1,0 +1,9 @@
+# MkDocs and Material theme for Spark reference documentation
+mkdocs>=1.5.0
+mkdocs-material>=9.5.0
+
+# Required for syntax highlighting and code features
+pygments>=2.17.0
+
+# Additional MkDocs plugins
+mkdocs-material-extensions>=1.3.0

@@ -1,0 +1,48 @@
+site_name: Spark Internals Reference
+site_description: Reference guide to Apache Spark SQL expressions and operators
+site_url: https://example.com/sparkreference
+docs_dir: .
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: deep orange
+      accent: orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep orange
+      accent: orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - admonitions
+  - toc:
+      permalink: true
+
+nav:
+  - Home: README.md
+  - Expressions:
+    - expressions/index.md
+  - Operators:
+    - operators/index.md

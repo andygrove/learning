@@ -180,3 +180,52 @@ python scripts/build_index.py
 **Slow first query**: The embedding model and LLM are loaded on first query. Subsequent queries are faster.
 
 **Import errors**: Make sure the virtual environment is activated (`source .venv/bin/activate`)
+
+## Spark Internals Reference
+
+The `sparkreference/` directory contains a comprehensive reference guide to Apache Spark SQL internals. This is built as a static website using MkDocs.
+
+### Generating Reference Pages
+
+Reference pages are generated using Claude to analyze Spark source code:
+
+```bash
+# Set API key
+export ANTHROPIC_API_KEY=your_key
+
+# Generate all expressions
+python scripts/generate_spark_reference.py --type expressions
+
+# Generate all operators
+python scripts/generate_spark_reference.py --type operators
+
+# Generate both (with limit)
+python scripts/generate_spark_reference.py --limit 50
+
+# Dry run to see what would be generated
+python scripts/generate_spark_reference.py --dry-run
+```
+
+The generator:
+- Reads Spark source code
+- Uses Claude to analyze and document each class
+- Outputs structured markdown files
+- Skips existing files (use `--skip-existing=false` to regenerate)
+
+### Building the Documentation Site
+
+```bash
+# Install docs dependencies
+pip install -r docs-requirements.txt
+
+# Serve locally with live reload (http://127.0.0.1:8000)
+./scripts/docs-serve.sh
+
+# Build static site to site/ directory
+./scripts/docs-build.sh
+```
+
+### Source Locations
+
+- **Expressions**: `spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/expressions/`
+- **Operators**: `spark/sql/core/src/main/scala/org/apache/spark/sql/execution/`

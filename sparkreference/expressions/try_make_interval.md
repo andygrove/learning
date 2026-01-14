@@ -1,267 +1,87 @@
-# Spark Catalyst Interval Expressions Reference
+# TryMakeInterval
 
 ## Overview
+The `TryMakeInterval` expression creates an interval from separate components (years, months, weeks, days, hours, minutes, seconds). Unlike `MakeInterval`, this expression returns `NULL` instead of throwing an exception when an error occurs during interval creation. It is implemented as a `RuntimeReplaceable` expression that delegates to `MakeInterval` with `failOnError = false`.
 
-This module provides expressions for working with interval data types in Apache Spark SQL, including extraction of interval parts, creation of intervals, and arithmetic operations. These expressions support both legacy `CalendarInterval` types and ANSI-compliant `YearMonthIntervalType` and `DayTimeIntervalType` introduced in Spark 3.2.
-
-## Interval Part Extraction Expressions
-
-### ExtractIntervalPart (Legacy CalendarInterval)
-
-#### Overview
-Extracts specific time units (years, months, days, hours, minutes, seconds) from `CalendarInterval` objects using a unified abstract base class pattern.
-
-#### Syntax
+## Syntax
 ```sql
-EXTRACT(field FROM interval_expression)
+try_make_interval([years [, months [, weeks [, days [, hours [, mins [, secs]]]]]]])
 ```
 
-#### Available Extractors
-- `ExtractIntervalYears` - Returns `IntegerType`
-- `ExtractIntervalMonths` - Returns `ByteType` 
-- `ExtractIntervalDays` - Returns `IntegerType`
-- `ExtractIntervalHours` - Returns `ByteType`
-- `ExtractIntervalMinutes` - Returns `ByteType`
-- `ExtractIntervalSeconds` - Returns `DecimalType(8, 6)`
-
-#### Algorithm
-- Delegates to `IntervalUtils` functions (`getYears`, `getMonths`, etc.)
-- Supports Tungsten code generation via `defineCodeGen`
-- Null-intolerant (returns null if input is null)
-
-### ExtractANSIIntervalPart (ANSI Intervals)
-
-#### Overview
-Extracts time units from ANSI-compliant interval types (`YearMonthIntervalType`, `DayTimeIntervalType`) with stricter type checking.
-
-#### Supported Extractors
-- `ExtractANSIIntervalYears/Months` - For `YearMonthIntervalType`
-- `ExtractANSIIntervalDays/Hours/Minutes/Seconds` - For `DayTimeIntervalType`
-
-#### Algorithm
-- Validates that the requested unit is within the interval's defined range
-- Uses same extraction functions but operates on primitive types (`Int` for YM, `Long` for DT)
-
----
-
-## Interval Arithmetic Expressions
-
-### MultiplyInterval / DivideInterval
-
-#### Overview
-Performs multiplication and division operations between `CalendarInterval` and numeric types with optional overflow checking based on ANSI mode.
-
-#### Syntax
-```sql
-interval_expression * numeric_value
-interval_expression / numeric_value
-```
-
-#### Arguments
+## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| interval | CalendarIntervalType | Source interval |
-| num | DoubleType | Numeric multiplier/divisor |
-| failOnError | Boolean | Whether to throw on overflow (default: ANSI mode setting) |
+| years | Expression | Number of years (optional, defaults to 0) |
+| months | Expression | Number of months (optional, defaults to 0) |
+| weeks | Expression | Number of weeks (optional, defaults to 0) |
+| days | Expression | Number of days (optional, defaults to 0) |
+| hours | Expression | Number of hours (optional, defaults to 0) |
+| mins | Expression | Number of minutes (optional, defaults to 0) |
+| secs | Expression | Number of seconds as Decimal (optional, defaults to 0) |
 
-#### Return Type
-`CalendarIntervalType`
+## Return Type
+Returns `INTERVAL` data type or `NULL` if an error occurs during interval construction.
 
-#### Algorithm
-- Uses `IntervalUtils.multiplyExact/multiply` or `divideExact/divide`
-- ANSI mode (`failOnError=true`) throws `ArithmeticException` on overflow
-- Non-ANSI mode returns null on overflow
+## Supported Data Types
+- **Numeric types**: All numeric expressions are supported for input parameters
+- **Decimal**: The seconds parameter specifically uses Decimal type with `MAX_LONG_DIGITS` precision and scale of 6
+- **Integer literals**: Default values use integer literals (0) for most parameters
 
----
+## Algorithm
+- Validates and converts input expressions to appropriate numeric types
+- Delegates actual interval creation to the underlying `MakeInterval` expression
+- Sets `failOnError = false` to ensure NULL return instead of exceptions
+- Uses `RuntimeReplaceable` pattern for expression rewriting during analysis
+- Supports variable number of arguments through constructor overloading
 
-## Interval Creation Expressions
+## Partitioning Behavior
+- **Preserves partitioning**: This expression operates on individual rows and does not require data movement
+- **No shuffle required**: Row-level computation that maintains existing data distribution
+- **Deterministic**: Given the same inputs, always produces the same output
 
-### MakeInterval
+## Edge Cases
+- **Null handling**: Returns `NULL` if any input parameter is `NULL`
+- **Invalid intervals**: Returns `NULL` instead of throwing exceptions for invalid interval combinations
+- **Overflow conditions**: Returns `NULL` when interval components exceed valid ranges
+- **Missing parameters**: Automatically fills missing parameters with appropriate zero values (Literal(0) for most, Decimal(0) for seconds)
+- **Empty constructor**: Intentionally not supported in try version as it would never overflow
 
-#### Overview
-Creates `CalendarInterval` objects from individual time unit components with microsecond precision for seconds.
+## Code Generation
+This expression supports Tungsten code generation through its `RuntimeReplaceable` implementation. The expression is replaced with `MakeInterval` during analysis phase, which then benefits from the underlying `MakeInterval` code generation capabilities.
 
-#### Syntax
+## Examples
 ```sql
-make_interval([years[, months[, weeks[, days[, hours[, mins[, secs]]]]]]])
+-- Create interval with all components
+SELECT try_make_interval(1, 2, 3, 4, 5, 6, 7.5);
+
+-- Create interval with partial components
+SELECT try_make_interval(2, 3);
+
+-- Handle invalid input gracefully (returns NULL)
+SELECT try_make_interval(9999999, 9999999, 9999999);
+
+-- Compare with make_interval behavior
+SELECT 
+  try_make_interval(1, NULL, 3) as safe_result,  -- Returns NULL
+  make_interval(1, NULL, 3) as unsafe_result;    -- Throws exception
 ```
 
-#### Arguments
-| Argument | Type | Description |
-|----------|------|-------------|
-| years | IntegerType | Number of years (positive or negative) |
-| months | IntegerType | Number of months (positive or negative) |
-| weeks | IntegerType | Number of weeks (positive or negative) |
-| days | IntegerType | Number of days (positive or negative) |
-| hours | IntegerType | Number of hours (positive or negative) |
-| mins | IntegerType | Number of minutes (positive or negative) |
-| secs | DecimalType(Decimal.MAX_LONG_DIGITS, 6) | Seconds with microsecond precision |
+```scala
+// DataFrame API usage
+import org.apache.spark.sql.functions._
 
-#### Return Type
-`CalendarIntervalType`
+// Create interval column
+df.select(try_make_interval(col("years"), col("months"), col("days")))
 
-#### Supported Data Types
-- All integer types for time units
-- High-precision decimal for seconds to preserve microsecond accuracy
+// With literal values
+df.select(try_make_interval(lit(1), lit(6), lit(0), lit(15)))
 
-#### Algorithm
-- Converts weeks to days (weeks × 7)
-- Validates against arithmetic overflow
-- Preserves microsecond precision in seconds component
-- Uses `IntervalUtils.makeInterval` for core logic
-
-#### Edge Cases
-- Null handling: Returns null if any argument is null
-- Overflow: Throws `ArithmeticException` in ANSI mode, returns null otherwise
-- Default values: Missing arguments default to 0
-
-#### Code Generation
-Supports Tungsten code generation with inline overflow checking and error handling.
-
-#### Examples
-```sql
-SELECT make_interval(100, 11, 1, 1, 12, 30, 01.001001);
--- Result: 100 years 11 months 8 days 12 hours 30 minutes 1.001001 seconds
-
-SELECT make_interval(0, 1, 0, 1, 0, 0, 100.000001);  
--- Result: 1 months 1 days 1 minutes 40.000001 seconds
+// Handle potentially invalid data
+df.select(try_make_interval(col("user_years"), col("user_months")))
+  .filter(col("interval_col").isNotNull)
 ```
-
-### TryMakeInterval
-
-#### Overview
-Safe version of `make_interval` that returns NULL instead of throwing exceptions on overflow, implemented as a `RuntimeReplaceable` expression.
-
-#### Syntax
-```sql
-try_make_interval([years[, months[, weeks[, days[, hours[, mins[, secs]]]]]]]) 
-```
-
-#### Return Type
-`CalendarIntervalType` or `NULL`
-
-#### Algorithm
-- Wraps `MakeInterval` with `failOnError = false`
-- Returns NULL on any overflow condition
-- Otherwise identical behavior to `MakeInterval`
-
-#### Examples
-```sql
-SELECT try_make_interval(2147483647);
--- Result: NULL (overflow)
-
-SELECT try_make_interval(100, 11, 1, 1, 12, 30, 01.001001);
--- Result: 100 years 11 months 8 days 12 hours 30 minutes 1.001001 seconds
-```
-
----
-
-## ANSI Interval Creation Expressions
-
-### MakeYMInterval
-
-#### Overview
-Creates ANSI-compliant year-month intervals with overflow checking and query context for error reporting.
-
-#### Syntax
-```sql
-make_ym_interval([years[, months]])
-```
-
-#### Arguments
-| Argument | Type | Description |
-|----------|------|-------------|
-| years | IntegerType | Number of years |
-| months | IntegerType | Number of months |
-
-#### Return Type
-`YearMonthIntervalType()`
-
-#### Algorithm
-- Uses `IntervalUtils.makeYearMonthInterval` with query context
-- Normalizes months (e.g., 14 months → 1 year 2 months)
-- Throws overflow exceptions with context information
-
-#### Examples
-```sql
-SELECT make_ym_interval(1, 2);
--- Result: 1-2
-
-SELECT make_ym_interval(-1, 1);  
--- Result: -0-11 (normalized)
-```
-
-### MakeDTInterval
-
-#### Overview
-Creates ANSI-compliant day-time intervals with microsecond precision and query context support.
-
-#### Syntax
-```sql
-make_dt_interval([days[, hours[, mins[, secs]]]])
-```
-
-#### Arguments
-| Argument | Type | Description |
-|----------|------|-------------|
-| days | IntegerType | Number of days |
-| hours | IntegerType | Number of hours | 
-| mins | IntegerType | Number of minutes |
-| secs | DecimalType(Decimal.MAX_LONG_DIGITS, 6) | Seconds with microsecond precision |
-
-#### Return Type
-`DayTimeIntervalType()`
-
-#### Algorithm
-- Converts all components to microseconds internally
-- Uses `IntervalUtils.makeDayTimeInterval` with query context
-- Validates against Long overflow for microsecond storage
-
-#### Examples
-```sql
-SELECT make_dt_interval(1, 12, 30, 01.001001);
--- Result: 1 12:30:01.001001000
-
-SELECT make_dt_interval(2);
--- Result: 2 00:00:00.000000000
-```
-
----
-
-## ANSI Interval Arithmetic
-
-### MultiplyYMInterval / MultiplyDTInterval
-
-#### Overview
-Type-safe multiplication of ANSI intervals by numeric values with precision handling for different numeric types.
-
-#### Supported Data Types
-- **YearMonth**: `YearMonthIntervalType` × `NumericType`
-- **DayTime**: `DayTimeIntervalType` × `NumericType`
-
-#### Algorithm
-- **Integer types**: Exact multiplication with overflow checking
-- **Decimal types**: High-precision decimal arithmetic with rounding
-- **Floating types**: Double-precision with HALF_UP rounding
-
-### DivideYMInterval / DivideDTInterval
-
-#### Overview
-Type-safe division of ANSI intervals with comprehensive overflow and divide-by-zero checking.
-
-#### Edge Cases
-- **Divide by zero**: Throws `QueryExecutionErrors.intervalDividedByZeroError`
-- **Integral overflow**: Special handling for `MIN_VALUE / -1` cases
-- **Rounding**: Uses `HALF_UP` rounding mode for all numeric types
-
-#### Partitioning Behavior
-All interval expressions preserve partitioning as they operate on individual rows without requiring data redistribution.
-
-#### Code Generation
-All expressions support Tungsten code generation with optimized numeric type handling and inline error checking.
 
 ## See Also
-- `IntervalUtils` - Core interval arithmetic and utility functions
-- `CalendarInterval` - Legacy interval representation
-- `YearMonthIntervalType` / `DayTimeIntervalType` - ANSI interval types
-- Date/time extraction expressions for timestamp types
+- `MakeInterval` - The non-safe version that throws exceptions on errors
+- `INTERVAL` literal syntax - Direct interval creation
+- Date/time arithmetic functions for interval operations

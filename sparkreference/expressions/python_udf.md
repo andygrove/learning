@@ -1,93 +1,96 @@
 # PythonUDF
 
 ## Overview
-PythonUDF represents a serialized Python lambda function that can be executed within Spark SQL expressions. It serves as a bridge between Spark's Catalyst optimizer and Python user-defined functions, requiring dedicated physical operators for execution and cannot be pushed down to data sources.
+PythonUDF represents a serialized version of a Python lambda function within Spark's Catalyst expression tree. This is a special expression that requires a dedicated physical operator for execution and cannot be pushed down to data sources due to its Python runtime dependency.
 
 ## Syntax
-```sql
--- SQL syntax (registered UDF)
-SELECT my_python_udf(column1, column2) FROM table
+```python
+# Register a Python UDF
+from pyspark.sql.functions import udf
+from pyspark.sql.types import IntegerType
 
--- DataFrame API
-import pyspark.sql.functions as F
-df.select(F.udf(python_function, return_type)(*columns))
+my_udf = udf(lambda x: x * 2, IntegerType())
+df.select(my_udf(df.column_name))
+```
+
+```scala
+// Scala DataFrame API (using registered Python UDF)
+df.selectExpr("my_python_udf(column_name)")
 ```
 
 ## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| name | String | Name of the Python function |
-| func | PythonFunction | Serialized Python function containing code and environment |
-| dataType | DataType | Expected return data type of the function |
-| children | Seq[Expression] | Input expressions/columns to pass to the function |
-| evalType | Int | Evaluation type from PythonEvalType (batched, Arrow, Pandas, etc.) |
-| udfDeterministic | Boolean | Whether the UDF is deterministic for optimization |
-| resultId | ExprId | Unique identifier for this expression instance |
+| name | String | The name identifier of the Python UDF |
+| func | PythonFunction | The serialized Python function object containing the lambda logic |
+| dataType | DataType | The Spark SQL data type that the UDF returns |
+| children | Seq[Expression] | Input expressions that serve as arguments to the Python function |
+| evalType | Int | Evaluation type identifier specifying how the UDF should be executed |
+| udfDeterministic | Boolean | Flag indicating whether the UDF produces consistent results for the same inputs |
+| resultId | ExprId | Unique expression identifier for the result (defaults to new generated ID) |
 
 ## Return Type
-Returns the specified `dataType` parameter. The expression is always nullable regardless of the specified data type.
+Returns the data type specified by the `dataType` parameter. Can be any Spark SQL data type including primitive types (IntegerType, StringType, etc.) or complex types (ArrayType, StructType, MapType).
 
 ## Supported Data Types
-- **Input**: All Spark SQL data types including primitives, arrays, structs, and maps
-- **Output**: All Spark SQL data types 
-- **Special handling**: User-defined types (UDTs) may fallback from Arrow to regular batched evaluation
-- **Arrow compatibility**: Most types support Arrow format except UDTs when `pythonUDFArrowFallbackOnUDT` is enabled
+- **Input**: All Spark SQL data types are supported as inputs to Python UDFs
+- **Output**: All Spark SQL data types that can be serialized between JVM and Python
+- **Limitations**: Complex nested types may have serialization overhead
 
 ## Algorithm
-- Serializes Python function code and environment into `PythonFunction` object
-- Batches input rows according to the specified `evalType` (regular batching, Arrow, or Pandas)
-- Executes Python function in separate Python worker processes
-- Deserializes results back to Catalyst internal representation
-- Supports multiple evaluation strategies: SQL_BATCHED_UDF, SQL_ARROW_BATCHED_UDF, SQL_SCALAR_PANDAS_UDF, etc.
-- Automatically falls back from Arrow to regular batching for UDTs when configured
+- Serializes input expressions from JVM to Python-compatible format
+- Transfers data to Python worker processes via inter-process communication
+- Executes the Python lambda function on the deserialized data
+- Serializes Python function results back to JVM Spark SQL data types
+- Returns results as part of the Catalyst expression evaluation pipeline
 
 ## Partitioning Behavior
 - **Preserves partitioning**: Yes, PythonUDF operations maintain existing data partitioning
-- **Requires shuffle**: No, evaluation happens locally on each partition
-- **Execution**: Requires dedicated physical operators (ArrowEvalPythonExec, BatchEvalPythonExec) rather than columnar processing
-- **Barrier execution**: May use barrier mode for certain evaluation types to ensure process synchronization
+- **Requires shuffle**: No, evaluation happens within existing partitions
+- **Execution**: Requires spawning Python worker processes on each executor
+- **Isolation**: Each partition's data is processed independently in separate Python processes
 
 ## Edge Cases
-- **Null handling**: Always returns nullable results; null handling depends on Python function implementation
-- **Empty partitions**: Handled gracefully, Python workers receive empty batches
-- **UDT fallback**: Automatically switches from Arrow to batched evaluation for User-Defined Types
-- **Deterministic behavior**: Overall determinism depends on both `udfDeterministic` flag and determinism of child expressions
-- **Error propagation**: Python exceptions are captured and re-raised as Spark exceptions
+- **Null handling**: Null values are passed through to Python; null handling depends on the Python function implementation
+- **Empty input**: Empty partitions skip Python process creation for efficiency
+- **Python exceptions**: Runtime errors in Python functions propagate as Spark task failures
+- **Memory pressure**: Large Python objects may cause memory issues due to JVM-Python serialization overhead
+- **Deterministic flag**: Non-deterministic UDFs may produce different results across multiple evaluations
 
 ## Code Generation
-This expression does **not** support code generation (Tungsten). It extends `Unevaluable` trait, meaning:
-- No `eval()` method implementation
-- No `doGenCode()` method implementation  
-- Always requires interpretation through dedicated Python execution operators
-- Cannot be used in generated code paths
+PythonUDF extends `Unevaluable`, meaning it **does not support** Tungsten code generation. The expression requires interpreted execution through the dedicated Python evaluation framework, as it needs to interface with external Python processes rather than generate JVM bytecode.
 
 ## Examples
-```sql
--- Register and use Python UDF
-CREATE OR REPLACE TEMPORARY VIEW my_table AS SELECT 1 as id, 'hello' as text;
--- (Python UDF registration happens in Python/PySpark layer)
-SELECT my_python_udf(id, text) FROM my_table;
+```python
+# Example Python UDF registration and usage
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import udf, col
+from pyspark.sql.types import StringType
+
+spark = SparkSession.builder.appName("PythonUDF").getOrCreate()
+
+# Define and register UDF
+def format_name(first, last):
+    return f"{last}, {first}".upper()
+
+format_udf = udf(format_name, StringType())
+
+# Usage
+df = spark.createDataFrame([("John", "Doe"), ("Jane", "Smith")], ["first", "last"])
+result = df.select(format_udf(col("first"), col("last")).alias("formatted_name"))
 ```
 
-```scala
-// DataFrame API usage (typically from PySpark)
-import org.apache.spark.sql.functions._
-import org.apache.spark.api.python.PythonFunction
+```sql
+-- SQL usage after registering UDF
+CREATE OR REPLACE TEMPORARY VIEW people AS 
+SELECT * FROM VALUES ("John", "Doe"), ("Jane", "Smith") AS t(first, last);
 
-// This is typically created internally by PySpark
-val pythonUDF = PythonUDF(
-  name = "my_function",
-  func = pythonFunction, // PythonFunction object
-  dataType = StringType,
-  children = Seq(col("input_column")),
-  evalType = PythonEvalType.SQL_BATCHED_UDF,
-  udfDeterministic = true
-)
+-- Register the UDF in SQL context first, then use
+SELECT format_name_udf(first, last) as formatted_name FROM people;
 ```
 
 ## See Also
-- **PythonUDAF**: Python user-defined aggregate functions
-- **PythonUDTF**: Python user-defined table functions  
-- **PythonFuncExpression**: Base trait for all Python function expressions
-- **ArrowEvalPythonExec**: Physical operator for Arrow-based Python UDF execution
-- **BatchEvalPythonExec**: Physical operator for regular batched Python UDF execution
+- `PythonFuncExpression` - Base trait for Python function expressions
+- `ScalaUDF` - Scala equivalent for user-defined functions
+- `Unevaluable` - Trait for expressions requiring special physical operators
+- Physical operators: `ArrowEvalPythonExec`, `BatchEvalPythonExec`

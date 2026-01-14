@@ -1,84 +1,76 @@
 # PipeExpression
 
 ## Overview
-
-`PipeExpression` is a special wrapper expression used internally by Apache Spark's Catalyst optimizer to represent expressions within SQL pipe operator clauses. It enforces aggregate function constraints and provides metadata about the pipe operator context during query analysis.
+PipeExpression represents a pipe operator (`|>`) used in Spark SQL for chaining operations in a pipeline-style syntax. This expression serves as a placeholder during query parsing and planning phases, distinguishing between aggregate and non-aggregate pipe operations based on the presence of aggregate functions in the child expression.
 
 ## Syntax
-
-PipeExpression is an internal Catalyst expression and is not directly accessible through SQL or DataFrame API. It is created during the parsing of SQL pipe operators like:
-
 ```sql
-SELECT * FROM table |> SELECT column1, column2
-SELECT * FROM table |> AGGREGATE sum(column1)
+-- Pipe operator syntax (parsed into PipeExpression internally)
+expression |> TRANSFORM
+expression |> AGGREGATE
 ```
 
 ## Arguments
-
 | Argument | Type | Description |
 |----------|------|-------------|
-| child | Expression | The wrapped child expression to be validated |
-| isAggregate | Boolean | Whether the pipe operator is `AGGREGATE` (true) or other clauses (false) |
-| clause | String | The name of the pipe operator clause (e.g., "SELECT", "AGGREGATE", "EXTEND") |
+| child | Expression | The child expression that contains the actual computation logic |
+| isAggregate | Boolean | Flag indicating whether this is an aggregate pipe operator (`|> AGGREGATE`). When true, child must contain aggregate functions; when false, child must not contain aggregate functions |
+| clause | String | The SQL clause identifier used for generating contextual error messages during query analysis |
 
 ## Return Type
-
-Returns the same data type as its child expression (`child.dataType`).
+Returns the same data type as the child expression (`child.dataType`). The actual return type depends entirely on what the child expression evaluates to.
 
 ## Supported Data Types
-
-Supports all data types since it acts as a transparent wrapper around the child expression. The actual data type support depends on the wrapped child expression.
+Supports all data types that the child expression supports, as PipeExpression acts as a transparent wrapper. No data type restrictions are imposed by the pipe expression itself.
 
 ## Algorithm
-
-- Acts as a validation wrapper that is never actually evaluated (extends `Unevaluable`)
-- Always reports as unresolved (`resolved = false`) to ensure analysis rules process it
-- Preserves the child expression's data type through transparent delegation
-- Gets stripped away after validation by `ValidateAndStripPipeExpressions` rule
-- Validates aggregate function constraints based on the `isAggregate` flag and clause type
+- Acts as a container for the child expression during query planning
+- Validates aggregate function usage based on the `isAggregate` flag
+- Remains unresolved (`resolved = false`) throughout its lifecycle
+- Gets replaced or transformed by later optimization phases
+- Provides error context through the `clause` parameter when validation fails
 
 ## Partitioning Behavior
-
-PipeExpression itself has no partitioning impact since:
-- It is an unevaluable wrapper expression
-- It gets eliminated during the analysis phase
-- Partitioning behavior depends on the underlying child expression after unwrapping
+PipeExpression itself does not affect partitioning as it is an `Unevaluable` expression:
+- Does not preserve or alter partitioning directly
+- Partitioning behavior depends on how the child expression is eventually processed
+- No shuffle operations are triggered by PipeExpression itself
 
 ## Edge Cases
-
-- **Null handling**: Inherits null handling from the child expression since it's never evaluated
-- **Aggregate validation**: Throws `QueryCompilationErrors` if aggregate constraints are violated:
-  - For `isAggregate = true`: child must contain at least one aggregate function
-  - For `isAggregate = false` and non-SELECT clauses: child must not contain aggregate functions
-- **Window functions**: Allowed in pipe operators and don't count as aggregate functions during validation
-- **Unresolved state**: Always remains unresolved until stripped away by analysis rules
+- **Null handling**: Inherits null handling behavior from the child expression
+- **Empty input**: Behavior determined by the child expression's implementation
+- **Unresolved state**: Always remains unresolved (`resolved = false`), requiring transformation during analysis
+- **Evaluation attempts**: Throws runtime exception if `eval()` is called since it extends `Unevaluable`
+- **Aggregate validation**: Strict enforcement of aggregate function presence based on `isAggregate` flag
 
 ## Code Generation
-
-Does not support code generation since it extends `Unevaluable`. The expression is designed to be eliminated during the analysis phase before code generation occurs.
+Does not support code generation as it extends `Unevaluable`. PipeExpression is designed to be transformed away during query analysis phases before code generation occurs. Any attempt to generate code for this expression will result in fallback to interpreted mode or throw an exception.
 
 ## Examples
-
 ```sql
--- Internal representation during analysis of:
-SELECT * FROM table |> AGGREGATE sum(salary), count(*)
--- Creates PipeExpression(child=sum(salary), isAggregate=true, clause="AGGREGATE")
+-- This would be parsed into PipeExpression internally
+-- Non-aggregate pipe operation
+SELECT col1 |> TRANSFORM upper(value) FROM table1;
 
--- Internal representation during analysis of:
-SELECT * FROM table |> SELECT name, age
--- Creates PipeExpression(child=name, isAggregate=false, clause="SELECT")
--- Creates PipeExpression(child=age, isAggregate=false, clause="SELECT")
+-- Aggregate pipe operation  
+SELECT col1 |> AGGREGATE sum(value) FROM table1 GROUP BY col1;
 ```
 
 ```scala
-// Not directly accessible through DataFrame API
-// Created internally during SQL parsing of pipe operators
+// PipeExpression is typically created during SQL parsing
+// Not directly instantiated in DataFrame API
+val pipeExpr = PipeExpression(
+  child = someExpression,
+  isAggregate = false,
+  clause = "TRANSFORM"
+)
+
+// Note: This would be part of internal Catalyst expression tree
+// and not user-facing DataFrame API
 ```
 
 ## See Also
-
-- `PipeOperator` - Logical plan node representing pipe operator boundaries
-- `EliminatePipeOperators` - Rule that removes PipeOperator nodes after analysis
-- `ValidateAndStripPipeExpressions` - Rule that validates and removes PipeExpression wrappers
-- `UnaryExpression` - Parent class for expressions with single child
-- `Unevaluable` - Trait for expressions that cannot be evaluated
+- `UnaryExpression` - Base class for expressions with single child
+- `Unevaluable` - Trait for expressions that cannot be directly evaluated
+- Aggregate expressions for `isAggregate = true` scenarios
+- Transform expressions for `isAggregate = false` scenarios

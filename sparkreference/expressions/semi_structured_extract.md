@@ -1,61 +1,82 @@
 # SemiStructuredExtract
 
 ## Overview
-`SemiStructuredExtract` is a Catalyst expression that represents the extraction of data from fields containing semi-structured data. It serves as an intermediate expression during query analysis that gets resolved into more specific extraction operations for variant data types.
+The `SemiStructuredExtract` expression extracts data from a specified field within a semi-structured data column. It is designed to work with Variant data types and provides a mechanism for accessing nested or dynamically structured data within Spark SQL queries.
 
 ## Syntax
-This is an internal Catalyst expression that doesn't have direct SQL syntax. It's created during query analysis and immediately resolved by the `ExtractSemiStructuredFields` rule.
+```sql
+-- SQL syntax (via function or operator)
+EXTRACT_FIELD(semi_structured_column, 'field_name')
+```
+
+```scala
+// DataFrame API usage
+import org.apache.spark.sql.catalyst.expressions.SemiStructuredExtract
+
+// Programmatic construction (internal API)
+SemiStructuredExtract(columnExpression, "field_name")
+```
 
 ## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| child | Expression | The semi-structured column expression to extract from |
-| field | String | The field name to extract from the semi-structured data |
+| `child` | `Expression` | The semi-structured column expression containing the data to extract from |
+| `field` | `String` | The name of the field to extract from the semi-structured data |
 
 ## Return Type
-Returns `StringType` as the default data type before resolution. After resolution by `ExtractSemiStructuredFields`, the actual return type depends on the resolved expression (`VariantGet` returns `VariantType`).
+Always returns `StringType`, regardless of the actual data type of the extracted field.
 
 ## Supported Data Types
-- **Input**: Currently only supports `VariantType` columns
-- **Output**: `VariantType` (after resolution to `VariantGet`)
+- **Input**: Variant type columns only (semi-structured data)
+- **Output**: String type
 
 ## Algorithm
-- Expression is created during query parsing/analysis as an intermediate representation
-- The `resolved` property is always `false`, indicating it requires further resolution
-- `ExtractSemiStructuredFields` rule transforms it into appropriate extraction expressions
-- For `VariantType` inputs, resolves to `VariantGet` with `failOnError = true`
-- Throws `AnalysisException` for unsupported column types
+- Accepts a semi-structured column (currently limited to Variant type) as input
+- Extracts the specified field name from the semi-structured data
+- Returns the extracted value as a string representation
+- Expression remains unresolved (`resolved = false`) indicating it requires further processing during analysis
+- Marked as `Unevaluable`, meaning it cannot be directly evaluated and must be transformed during query planning
 
 ## Partitioning Behavior
-- **Preserves partitioning**: Yes, as this is a column-level transformation
-- **Requires shuffle**: No, operates on individual rows independently
+- **Preserves partitioning**: Yes, this is a projection operation that doesn't change row distribution
+- **Requires shuffle**: No, operates on individual rows without requiring data movement across partitions
 
 ## Edge Cases
-- **Null handling**: Behavior depends on the resolved expression (`VariantGet`)
-- **Unresolved input**: Waits for child expression resolution before applying transformation
-- **Unsupported types**: Throws `AnalysisException` with error class "COLUMN_IS_NOT_VARIANT_TYPE"
-- **Field extraction failures**: Configured with `failOnError = true`, so will throw exceptions on invalid field access
+- **Null handling**: Behavior depends on the underlying implementation (not specified in the provided code)
+- **Non-existent fields**: Behavior when the specified field doesn't exist in the semi-structured data is implementation-dependent
+- **Type conversion**: All extracted values are converted to string format, potentially losing type information
+- **Nested fields**: The current interface only supports top-level field names as strings
 
 ## Code Generation
-This expression is marked as `Unevaluable`, meaning it cannot be directly code-generated or interpreted. It must be resolved to another expression (`VariantGet`) during analysis phase, which then handles code generation.
+This expression does **not** support Tungsten code generation. It extends `Unevaluable`, which means:
+- Falls back to interpreted mode during execution
+- Must be resolved and potentially replaced with evaluable expressions during query analysis phase
+- Cannot be directly executed in generated code paths
 
 ## Examples
 ```sql
--- This expression is internal and doesn't have direct SQL syntax
--- It's created during analysis of variant field access operations
+-- Example SQL usage (hypothetical syntax)
+SELECT EXTRACT_FIELD(variant_column, 'user_id') as user_id
+FROM semi_structured_table
+WHERE variant_column IS NOT NULL;
 ```
 
 ```scala
-// Internal usage during Catalyst analysis
-val extract = SemiStructuredExtract(
-  child = someVariantColumn, 
-  field = "fieldName"
-)
-// This gets resolved to VariantGet by ExtractSemiStructuredFields rule
+// Example DataFrame API usage (internal/advanced usage)
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.types._
+
+// Create expression programmatically
+val childExpr = col("variant_data").expr
+val extractExpr = SemiStructuredExtract(childExpr, "customer_name")
+
+// Note: This would typically be used internally by Spark's query planner
+// rather than directly by end users
 ```
 
 ## See Also
-- `VariantGet` - The expression this resolves to for variant types
-- `ExtractSemiStructuredFields` - The rule that resolves this expression
-- `UnaryExpression` - Parent class providing structure
-- `Unevaluable` - Trait indicating this requires resolution before evaluation
+- `GetStructField` - For extracting fields from struct types
+- `GetArrayItem` - For extracting elements from array types
+- `GetMapValue` - For extracting values from map types
+- Variant data type documentation
+- Semi-structured data handling in Spark SQL

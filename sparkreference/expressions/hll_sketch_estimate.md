@@ -1,151 +1,77 @@
-# DataSketches HLL Expressions Reference
+# HllSketchEstimate
 
-## HllSketchEstimate
+## Overview
+The `HllSketchEstimate` expression extracts the cardinality estimate from a HyperLogLog (HLL) sketch binary representation. It takes a serialized HLL sketch as input and returns the estimated distinct count as a long integer, providing approximate cardinality estimation with high efficiency and low memory usage.
 
-### Overview
-The `HllSketchEstimate` expression extracts the estimated cardinality (number of unique values) from a binary representation of a DataSketches HyperLogLog (HLL) sketch. This expression is typically used to get the final count estimate from an HLL sketch that was previously aggregated using `hll_sketch_agg`.
-
-### Syntax
+## Syntax
 ```sql
 hll_sketch_estimate(sketch_binary)
 ```
 
-### Arguments
+```scala
+// DataFrame API
+df.select(expr("hll_sketch_estimate(hll_column)"))
+```
+
+## Arguments
 | Argument | Type | Description |
 |----------|------|-------------|
-| sketch_binary | BinaryType | Binary representation of a DataSketches HllSketch object |
+| sketch_binary | BinaryType | Serialized HyperLogLog sketch as a byte array |
 
-### Return Type
-`LongType` - Returns the estimated cardinality as a long integer, rounded to the nearest whole number.
+## Return Type
+`LongType` - Returns the cardinality estimate as a long integer, rounded to the nearest whole number.
 
-### Supported Data Types
-- Input: `BinaryType` only (must be a valid HllSketch binary representation)
-- Output: `LongType`
+## Supported Data Types
+- **Input**: `BinaryType` only - expects serialized HLL sketch data
+- **Output**: `LongType` - estimated distinct count
 
-### Algorithm
-- Deserializes the input binary data into an HllSketch object using `HllSketch.heapify()`
-- Calls `getEstimate()` on the deserialized sketch to get the cardinality estimate
-- Rounds the estimate to the nearest long integer using `Math.round()`
-- Throws an exception if the binary data is not a valid HllSketch representation
+## Algorithm
+- Deserializes the input byte array using Apache DataSketches `HllSketch.heapify()` method
+- Wraps the byte array in a `Memory` object for efficient processing
+- Calls `getEstimate()` on the deserialized HLL sketch to obtain the cardinality estimate
+- Rounds the floating-point estimate to the nearest long integer using `Math.round()`
+- Throws `QueryExecutionErrors.hllInvalidInputSketchBuffer()` if deserialization fails due to invalid sketch data
 
-### Partitioning Behavior
-- Preserves partitioning as it's a deterministic transformation on individual rows
-- Does not require shuffle operations
-- Can be applied partition-locally
+## Partitioning Behavior
+- **Preserves partitioning**: Yes, this is a deterministic function that operates row-by-row
+- **Requires shuffle**: No, evaluation is local to each partition
+- Can be pushed down to individual partitions without affecting correctness
 
-### Edge Cases
-- **Null handling**: Expression is null-intolerant, meaning null inputs will result in null output
-- **Invalid binary data**: Throws `QueryExecutionErrors.hllInvalidInputSketchBuffer` for malformed sketch data
-- **Empty sketches**: Returns 0 for sketches with no data
-- **Memory errors**: Catches both `SketchesArgumentException` and `java.lang.Error` during deserialization
+## Edge Cases
+- **Null handling**: Returns null if input is null (null-intolerant behavior)
+- **Invalid sketch data**: Throws `QueryExecutionErrors.hllInvalidInputSketchBuffer` for corrupted or invalid binary data
+- **Memory errors**: Catches `SketchesArgumentException` and `java.lang.Error` during deserialization
+- **Empty sketches**: Valid empty HLL sketches return estimate of 0
+- **Precision bounds**: Estimate accuracy depends on the original HLL sketch configuration parameters
 
-### Code Generation
-Uses `CodegenFallback` - this expression falls back to interpreted mode and does not generate optimized bytecode.
+## Code Generation
+This expression uses **CodegenFallback**, meaning it does not support Tungsten code generation and falls back to interpreted evaluation mode. The `nullSafeEval` method is called directly during query execution.
 
-### Examples
+## Examples
 ```sql
--- Get estimated unique count from aggregated sketch
-SELECT hll_sketch_estimate(hll_sketch_agg(user_id)) 
-FROM user_events;
+-- Estimate distinct count from HLL sketch
+SELECT hll_sketch_estimate(hll_sketch_agg(col)) FROM VALUES (1), (1), (2), (2), (3) tab(col);
+-- Result: 3
 
--- Combined with grouping
-SELECT region, hll_sketch_estimate(hll_sketch_agg(user_id)) as unique_users
-FROM user_events 
-GROUP BY region;
+-- Use with pre-computed HLL sketches
+SELECT customer_segment, hll_sketch_estimate(user_sketch) 
+FROM customer_analytics 
+WHERE date_partition = '2023-01-01';
 ```
 
 ```scala
 // DataFrame API usage
-df.select(expr("hll_sketch_estimate(sketch_column)"))
+import org.apache.spark.sql.functions._
 
-// With aggregation
-df.groupBy("category")
-  .agg(expr("hll_sketch_estimate(hll_sketch_agg(user_id))").alias("unique_users"))
+// Estimate from aggregated sketch
+df.select(expr("hll_sketch_estimate(hll_sketch_agg(user_id))"))
+
+// Estimate from stored sketch column
+df.select($"segment", expr("hll_sketch_estimate(stored_hll_sketch)"))
 ```
 
----
-
-## HllUnion
-
-### Overview
-The `HllUnion` expression merges two binary representations of DataSketches HLL sketches using a DataSketches Union object. This allows combining cardinality estimates from different sketches while maintaining approximation accuracy. The expression supports an optional parameter to control whether sketches with different precision parameters can be merged.
-
-### Syntax
-```sql
-hll_union(first_sketch, second_sketch [, allowDifferentLgConfigK])
-```
-
-### Arguments
-| Argument | Type | Description |
-|----------|------|-------------|
-| first_sketch | BinaryType | Binary representation of the first HllSketch object |
-| second_sketch | BinaryType | Binary representation of the second HllSketch object |
-| allowDifferentLgConfigK | BooleanType | Optional. Whether to allow union of sketches with different lgConfigK values (defaults to false) |
-
-### Return Type
-`BinaryType` - Returns a binary representation of the merged HLL sketch.
-
-### Supported Data Types
-- Input: Two `BinaryType` parameters (HLL sketches) and one optional `BooleanType` parameter
-- Output: `BinaryType` (merged HLL sketch)
-
-### Algorithm
-- Deserializes both input binary arrays into HllSketch objects using `HllSketch.heapify()`
-- Validates lgConfigK compatibility if `allowDifferentLgConfigK` is false
-- Creates a Union object with the minimum lgConfigK from both sketches
-- Updates the union with both sketches sequentially
-- Returns the union result as a binary array using HLL_8 target type
-
-### Partitioning Behavior
-- Preserves partitioning as it operates on individual rows
-- Does not require shuffle operations
-- Commonly used after shuffle phases where sketches from different partitions need merging
-
-### Edge Cases
-- **Null handling**: Expression is null-intolerant, null inputs result in null output
-- **Invalid binary data**: Throws `QueryExecutionErrors.hllInvalidInputSketchBuffer` for either malformed sketch
-- **lgConfigK mismatch**: Throws `QueryExecutionErrors.hllUnionDifferentLgK` when sketches have different precision and `allowDifferentLgConfigK` is false
-- **Memory errors**: Catches both `SketchesArgumentException` and `java.lang.Error` during deserialization
-- **Different precisions**: When allowed, uses the minimum lgConfigK value for the union result
-
-### Code Generation
-Uses `CodegenFallback` - this expression falls back to interpreted mode and does not generate optimized bytecode.
-
-### Examples
-```sql
--- Basic union of two sketches
-SELECT hll_sketch_estimate(
-  hll_union(sketch1, sketch2)
-) FROM sketch_table;
-
--- Union with different lgConfigK allowed
-SELECT hll_union(sketch_col1, sketch_col2, true) 
-FROM combined_sketches;
-
--- Complex example: union sketches from different groups
-SELECT hll_sketch_estimate(
-  hll_union(
-    hll_sketch_agg(col1), 
-    hll_sketch_agg(col2)
-  )
-) as total_unique
-FROM VALUES (1, 4), (1, 4), (2, 5), (2, 5), (3, 6) tab(col1, col2);
-```
-
-```scala
-// DataFrame API usage
-df.select(expr("hll_union(sketch1, sketch2)"))
-
-// With allowDifferentLgConfigK parameter
-df.select(expr("hll_union(sketch1, sketch2, true)"))
-
-// Chaining operations
-df.select(
-  expr("hll_sketch_estimate(hll_union(sketch_a, sketch_b))").alias("merged_estimate")
-)
-```
-
-### See Also
-- `hll_sketch_estimate` - Extract cardinality estimates from HLL sketches
-- `hll_sketch_agg` - Aggregate function to create HLL sketches from column data
-- DataSketches HLL documentation for lgConfigK parameter tuning
+## See Also
+- `HllSketchAgg` - Creates HLL sketches from input data
+- `HllUnion` - Merges multiple HLL sketches
+- `approx_count_distinct` - Alternative approximate cardinality function
+- Apache DataSketches HLL implementation for algorithm details

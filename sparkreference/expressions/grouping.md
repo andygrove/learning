@@ -1,106 +1,83 @@
 # Grouping
 
 ## Overview
-The Grouping expressions in Spark Catalyst provide support for advanced aggregation operations including CUBE, ROLLUP, and GROUPING SETS. These expressions are placeholders that get replaced by the analyzer during query planning to generate multiple grouping combinations for aggregation operations.
+The `Grouping` expression is used in SQL aggregation queries with `GROUP BY GROUPING SETS`, `CUBE`, or `ROLLUP` to determine whether a specific column is aggregated (grouped) in the current result row. It returns 1 if the column is aggregated (null in super-aggregate rows) and 0 if the column contains an actual grouped value.
 
 ## Syntax
 ```sql
--- CUBE operation
-SELECT col1, col2, aggregate_func(col3) FROM table GROUP BY CUBE(col1, col2)
-
--- ROLLUP operation  
-SELECT col1, col2, aggregate_func(col3) FROM table GROUP BY ROLLUP(col1, col2)
-
--- GROUPING SETS operation
-SELECT col1, col2, aggregate_func(col3) FROM table GROUP BY GROUPING SETS ((col1), (col2), (col1, col2))
-
--- GROUPING function
-SELECT col1, GROUPING(col1), aggregate_func(col2) FROM table GROUP BY CUBE(col1)
-
--- GROUPING_ID function
-SELECT col1, col2, GROUPING_ID(col1, col2), aggregate_func(col3) FROM table GROUP BY CUBE(col1, col2)
-```
-
-## Arguments
-| Argument | Type | Description |
-|----------|------|-------------|
-| groupingSetIndexes | Seq[Seq[Int]] | Indexes mapping to flattened grouping expressions |
-| children/flatGroupingSets | Seq[Expression] | The actual grouping expressions |
-| userGivenGroupByExprs | Seq[Expression] | User-specified GROUP BY expressions (GroupingSets only) |
-| groupByExprs | Seq[Expression] | Expressions used for grouping in GroupingID |
-| child | Expression | Single column expression for Grouping function |
-
-## Return Type
-- **BaseGroupingSets (Cube, Rollup, GroupingSets)**: These are placeholder expressions that don't return values directly
-- **Grouping**: Returns `ByteType` (0 for not aggregated, 1 for aggregated)  
-- **GroupingID**: Returns `IntegerType` or `LongType` based on `SQLConf.get.integerGroupingIdEnabled` configuration
-
-## Supported Data Types
-- **BaseGroupingSets**: Supports any expression type as grouping columns
-- **Grouping**: Accepts any expression type as input, returns ByteType
-- **GroupingID**: Accepts any expression type as input, returns IntegerType/LongType
-
-## Algorithm
-- **CUBE**: Generates all possible combinations (2^N subsets) of the grouping expressions using recursive subset generation
-- **ROLLUP**: Generates hierarchical combinations by taking prefixes of grouping expressions (N+1 combinations)
-- **GROUPING SETS**: Uses user-specified combinations of grouping expressions
-- **Grouping**: References a virtual `groupingIdAttribute` to determine if a column is aggregated in the current row
-- **GroupingID**: Computes grouping level as `(grouping(c1) << (n-1)) + (grouping(c2) << (n-2)) + ... + grouping(cn)`
-
-## Partitioning Behavior
-- These expressions typically require shuffle operations as they generate multiple grouping combinations
-- Each grouping set combination may require data redistribution based on different grouping keys
-- The analyzer replaces these placeholder expressions before physical planning, so partitioning decisions are made at that stage
-
-## Edge Cases
-- **Null Handling**: `Grouping` is not nullable (returns 0 or 1), `GroupingID` is also not nullable
-- **Empty Input**: Empty grouping sets result in a single empty grouping (equivalent to global aggregation)
-- **Semantic Equality**: `distinctGroupByExprs` uses semantic equality to deduplicate expressions like `(a * b)` and `(b * a)`
-- **Resolution**: All BaseGroupingSets expressions have `resolved = false` and must be replaced by the analyzer
-- **Configuration Dependency**: GroupingSets child ordering depends on `groupingIdWithAppendedUserGroupByEnabled` configuration
-
-## Code Generation
-- **BaseGroupingSets**: Extends `CodegenFallback`, indicating these expressions fall back to interpreted mode
-- **Grouping/GroupingID**: Extend `Unevaluable`, meaning they don't support direct evaluation and must be resolved during analysis
-
-## Examples
-```sql
--- CUBE example: generates (a,b,c), (a,b), (a,c), (b,c), (a), (b), (c), ()
-SELECT name, age, COUNT(*) FROM people GROUP BY CUBE(name, age);
-
--- ROLLUP example: generates (a,b,c), (a,b), (a), ()  
-SELECT year, month, day, SUM(sales) FROM sales_data GROUP BY ROLLUP(year, month, day);
-
--- GROUPING SETS example with specific combinations
-SELECT col1, col2, SUM(amount) FROM table 
-GROUP BY GROUPING SETS ((col1), (col2), (col1, col2));
-
--- GROUPING function to identify aggregated rows
-SELECT name, GROUPING(name), SUM(age) FROM people GROUP BY CUBE(name);
-
--- GROUPING_ID for multi-level grouping identification
-SELECT name, age, GROUPING_ID(name, age), COUNT(*) FROM people GROUP BY CUBE(name, age);
+GROUPING(column_expression)
 ```
 
 ```scala
 // DataFrame API usage
 import org.apache.spark.sql.functions._
+df.groupBy().agg(grouping(col("column_name")))
+```
 
-// CUBE
-df.cube($"col1", $"col2").agg(sum($"amount"))
+## Arguments
+| Argument | Type | Description |
+|----------|------|-------------|
+| child | Expression | The column expression to check for grouping status |
 
-// ROLLUP  
-df.rollup($"year", $"month").agg(avg($"sales"))
+## Return Type
+`ByteType` - Returns a byte value (0 or 1) indicating grouping status.
 
-// Using grouping function
-df.cube($"category").agg(
-  sum($"amount"), 
-  grouping($"category").alias("is_total")
-)
+## Supported Data Types
+Accepts any data type as input since it evaluates the grouping metadata rather than the actual column values. The input expression type is not restricted.
+
+## Algorithm
+- Accesses the virtual `groupingId` attribute that Spark maintains internally during CUBE/ROLLUP/GROUPING SETS operations
+- Extracts the bit corresponding to the specified column from the grouping ID bitmask
+- Returns 1 if the bit indicates the column is aggregated (grouped out)
+- Returns 0 if the bit indicates the column contains actual grouped values
+- The expression is marked as `Unevaluable`, meaning evaluation is handled specially during query planning
+
+## Partitioning Behavior
+- Does not directly affect partitioning as it's a metadata accessor
+- Inherits partitioning behavior from the underlying GROUP BY operation
+- Typically used in contexts that may require shuffle for grouping operations (CUBE/ROLLUP)
+
+## Edge Cases
+- **Null handling**: Returns non-null results even when the referenced column contains nulls, as it reports grouping metadata
+- **Non-nullable**: The expression itself never returns null (`nullable = false`)
+- **Invalid context**: Can only be used within GROUP BY GROUPING SETS, CUBE, or ROLLUP contexts
+- **Missing grouping ID**: Relies on the presence of `VirtualColumn.groupingIdAttribute` in the query plan
+
+## Code Generation
+This expression does **not** support Tungsten code generation. It extends `Unevaluable`, meaning it's resolved and replaced during query planning rather than being evaluated at runtime through generated code.
+
+## Examples
+```sql
+-- Example with CUBE
+SELECT col1, col2, SUM(amount), GROUPING(col1), GROUPING(col2)
+FROM sales 
+GROUP BY CUBE(col1, col2);
+
+-- Example with ROLLUP  
+SELECT year, quarter, SUM(revenue), GROUPING(year), GROUPING(quarter)
+FROM financial_data
+GROUP BY ROLLUP(year, quarter);
+
+-- Example with GROUPING SETS
+SELECT category, region, COUNT(*), GROUPING(category), GROUPING(region)  
+FROM products
+GROUP BY GROUPING SETS ((category), (region), ());
+```
+
+```scala
+// DataFrame API usage with CUBE
+import org.apache.spark.sql.functions._
+
+df.cube("col1", "col2")
+  .agg(
+    sum("amount"),
+    grouping("col1").alias("grouping_col1"),  
+    grouping("col2").alias("grouping_col2")
+  )
 ```
 
 ## See Also
-- **Aggregate Functions**: Used in conjunction with these grouping operations
-- **Window Functions**: Alternative approach for hierarchical aggregations
-- **VirtualColumn**: Provides the underlying `groupingIdAttribute` mechanism
-- **TreePattern.GROUPING_ANALYTICS**: Tree pattern used for matching these expressions during analysis
+- `GroupingID` - Returns the complete grouping identifier as a bitmask
+- `CUBE` - Creates grouping sets for all combinations of specified columns
+- `ROLLUP` - Creates hierarchical grouping sets
+- `GROUPING SETS` - Explicitly specifies which grouping combinations to compute

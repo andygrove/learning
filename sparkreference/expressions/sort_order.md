@@ -1,102 +1,99 @@
 # SortOrder
 
 ## Overview
-The `SortOrder` expression defines ordering specifications for sorting operations in Apache Spark SQL. It encapsulates a child expression along with sort direction (ascending/descending) and null ordering behavior (nulls first/last), and is used primarily by sort-based operators to determine how data should be ordered.
+
+SortOrder is a Catalyst expression that represents sort ordering specification for a single column or expression in Apache Spark SQL. It encapsulates the child expression to be sorted, sort direction (ascending/descending), null ordering behavior, and semantically equivalent expressions that have the same sort order.
 
 ## Syntax
-```sql
--- SQL syntax
-ORDER BY expression [ASC|DESC] [NULLS FIRST|NULLS LAST]
 
--- Examples
-ORDER BY col1 ASC NULLS FIRST
-ORDER BY col2 DESC NULLS LAST
+```sql
+-- SQL syntax (used in ORDER BY clauses)
+ORDER BY column_expression [ASC|DESC] [NULLS FIRST|NULLS LAST]
 ```
 
 ```scala
 // DataFrame API usage
-import org.apache.spark.sql.functions._
-df.orderBy(asc("col1"), desc("col2"))
-df.sort(col("col1").asc_nulls_first, col("col2").desc_nulls_last)
+df.sort(col("column_name").asc_nulls_first)
+df.orderBy(col("column_name").desc_nulls_last)
 ```
 
 ## Arguments
+
 | Argument | Type | Description |
 |----------|------|-------------|
-| child | Expression | The expression to sort by |
-| direction | SortDirection | Sort direction: `Ascending` or `Descending` |
-| nullOrdering | NullOrdering | Null ordering: `NullsFirst` or `NullsLast` |
-| sameOrderExpressions | Seq[Expression] | Set of expressions with equivalent sort order (from equivalence relations) |
+| child | Expression | The expression to be sorted |
+| direction | SortDirection | Sort direction (Ascending or Descending) |
+| nullOrdering | NullOrdering | How null values should be ordered (NullsFirst or NullsLast) |
+| sameOrderExpressions | Seq[Expression] | Set of expressions with equivalent sort order derived from operator equivalence relations |
 
 ## Return Type
-`SortOrder` is an unevaluable expression that does not return data directly. It serves as metadata for sorting operations. The `SortPrefix` helper expression returns `LongType` for prefix-based sorting optimization.
+
+SortOrder itself is `Unevaluable` and does not return a value. It inherits the data type from its child expression for type checking purposes only.
 
 ## Supported Data Types
-All orderable data types are supported:
-- **Numeric types**: `BooleanType`, `IntegralType`, `FloatType`, `DoubleType`, `DecimalType`
-- **Temporal types**: `DateType`, `TimestampType`, `TimestampNTZType`, `TimeType`, `AnsiIntervalType`  
-- **String types**: `StringType`, `BinaryType`
-- **Complex types**: Arrays, structs (with orderable elements)
+
+Supports any data type that implements ordering semantics. The `checkInputDataTypes()` method validates that the child expression's data type supports ordering using `TypeUtils.checkForOrderingExpr()`.
 
 ## Algorithm
-- **Type validation**: Ensures the child expression has an orderable data type using `TypeUtils.checkForOrderingExpr`
-- **Default null ordering**: Automatically assigns `NullsFirst` for ascending sorts and `NullsLast` for descending sorts when not explicitly specified
-- **Semantic equivalence**: Uses `sameOrderExpressions` to track expressions that produce equivalent ordering (e.g., from join keys)
-- **Satisfaction checking**: The `satisfies()` method determines if one `SortOrder` can fulfill the requirements of another
-- **Prefix generation**: `SortPrefix` generates 64-bit prefixes for efficient sorting using radix sort techniques
+
+- SortOrder is a metadata expression that specifies sorting behavior rather than computing values
+- The child expression provides the actual values to be compared
+- Direction and null ordering control the comparison semantics
+- Same order expressions enable optimization by recognizing equivalent sort keys
+- Used primarily by sort-based operators like Sort, SortMergeJoin, and window functions
 
 ## Partitioning Behavior
-- **Preserves partitioning**: `SortOrder` itself doesn't change partitioning
-- **May require shuffle**: Sort operations using `SortOrder` may trigger shuffles if data needs global ordering
-- **Range partitioning**: Can be used with range partitioning to maintain sort order across partitions
+
+SortOrder itself does not directly affect partitioning, but it influences operators that use it:
+- **Sort operations**: May require shuffle if global ordering is needed
+- **SortMergeJoin**: Can preserve partitioning when join keys align with partition keys
+- **Window functions**: May require repartitioning based on partition keys vs sort keys
 
 ## Edge Cases
-- **Null handling**: Nulls are ordered according to the `nullOrdering` specification (`NullsFirst` or `NullsLast`)
-- **Empty input**: No special handling needed - empty datasets remain empty after sorting
-- **Non-orderable types**: Type checking prevents creation of `SortOrder` for non-orderable types like `MapType`
-- **Decimal overflow**: For `DecimalType`, if precision adjustment fails during prefix generation, uses `Long.MinValue`/`Long.MaxValue` as boundary values
-- **NaN handling**: For floating-point types, NaN values are handled by the `DoublePrefixComparator`
+
+- **Null handling**: Behavior determined by `nullOrdering` parameter (NULLS FIRST or NULLS LAST)
+- **Expression equivalence**: The `satisfies()` method checks semantic equivalence using `sameOrderExpressions`
+- **Type validation**: Fails if child expression's data type doesn't support ordering
+- **Empty sameOrderExpressions**: Valid case when no equivalent expressions exist
 
 ## Code Generation
-- **SortOrder**: Marked as `Unevaluable` - does not generate code for evaluation
-- **SortPrefix**: Supports full Tungsten code generation with optimized prefix computation for each data type
-- **Optimized paths**: Uses specialized prefix comparators (`StringPrefixComparator`, `BinaryPrefixComparator`, etc.) for efficient sorting
+
+SortOrder is marked as `Unevaluable`, so it does not participate in code generation directly. The actual sorting logic is handled by physical operators that consume SortOrder specifications and generate optimized comparison code.
 
 ## Examples
+
 ```sql
--- Basic sorting
-SELECT * FROM table ORDER BY age DESC NULLS LAST;
+-- Basic ascending sort
+SELECT * FROM table ORDER BY col1 ASC NULLS FIRST
 
--- Multiple columns with different null ordering  
-SELECT * FROM table ORDER BY 
-  name ASC NULLS FIRST,
-  salary DESC NULLS LAST;
+-- Descending with nulls last
+SELECT * FROM table ORDER BY col2 DESC NULLS LAST
 
--- Complex expressions
-SELECT * FROM table ORDER BY 
-  CASE WHEN status = 'active' THEN 1 ELSE 2 END ASC;
+-- Multiple sort orders
+SELECT * FROM table ORDER BY col1 ASC, col2 DESC NULLS FIRST
 ```
 
 ```scala
 // DataFrame API usage
 import org.apache.spark.sql.functions._
 
-// Basic sorting
-df.orderBy(desc("age"))
+// Ascending with nulls first
+df.orderBy(col("col1").asc_nulls_first)
 
-// Multiple columns with custom null handling
-df.sort(col("name").asc_nulls_first, col("salary").desc_nulls_last)
+// Descending with nulls last  
+df.orderBy(col("col2").desc_nulls_last)
 
-// Using expressions
-df.orderBy(when(col("status") === "active", 1).otherwise(2).asc)
+// Multiple sort orders
+df.orderBy(col("col1").asc, col("col2").desc_nulls_first)
 
-// Internal SortOrder creation (Catalyst internals)
-val sortOrder = SortOrder(col("name").expr, Ascending, NullsFirst, Seq.empty)
+// Using sort instead of orderBy
+df.sort(col("col1").desc)
 ```
 
 ## See Also
-- **Sort**: Physical operator that uses `SortOrder` specifications
-- **TakeOrderedAndProject**: Operator for `ORDER BY` with `LIMIT`
-- **SortMergeJoin**: Uses `SortOrder` for join key ordering
-- **Window**: Window functions that require ordering
-- **RangePartitioning**: Partitioning strategy based on sort order
+
+- **SortDirection**: Enumeration for Ascending/Descending
+- **NullOrdering**: Enumeration for NullsFirst/NullsLast  
+- **Sort**: Physical operator that executes sorting
+- **SortMergeJoin**: Join operator that uses sort ordering
+- **WindowExec**: Window function operator that requires sorted input
