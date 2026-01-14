@@ -43,64 +43,445 @@ nav:
   - Home: index.md
   - Expressions:
     - Overview: expressions/index.md
+    - Abs: expressions/abs.md
+    - Acos: expressions/acos.md
+    - Acosh: expressions/acosh.md
+    - AesDecrypt: expressions/aes_decrypt.md
+    - AesEncrypt: expressions/aes_encrypt.md
+    - And: expressions/and.md
+    - AnyValue: expressions/any_value.md
     - ApplyFunctionExpression: expressions/apply_function_expression.md
+    - ApproxCountDistinctForIntervals: expressions/approx_count_distinct_for_intervals.md
+    - ApproximatePercentile: expressions/approximate_percentile.md
+    - ApproxTopK: expressions/approx_top_k.md
+    - ApproxTopKAccumulate: expressions/approx_top_k_accumulate.md
+    - ApproxTopKCombine: expressions/approx_top_k_combine.md
+    - ApproxTopKEstimate: expressions/approx_top_k_estimate.md
+    - ArrayAggregate: expressions/array_aggregate.md
+    - ArrayBinarySearch: expressions/array_binary_search.md
+    - ArrayCompact: expressions/array_compact.md
+    - ArrayContains: expressions/array_contains.md
+    - ArrayDistinct: expressions/array_distinct.md
+    - ArrayExists: expressions/array_exists.md
+    - ArrayFilter: expressions/array_filter.md
+    - ArrayForAll: expressions/array_for_all.md
+    - ArrayInsert: expressions/array_insert.md
+    - ArrayJoin: expressions/array_join.md
+    - ArrayMax: expressions/array_max.md
+    - ArrayMin: expressions/array_min.md
+    - ArrayPosition: expressions/array_position.md
+    - ArrayRemove: expressions/array_remove.md
+    - ArrayRepeat: expressions/array_repeat.md
+    - ArraySize: expressions/array_size.md
+    - ArraySort: expressions/array_sort.md
+    - ArraysOverlap: expressions/arrays_overlap.md
+    - ArraysZip: expressions/arrays_zip.md
+    - ArrayTransform: expressions/array_transform.md
+    - Ascii: expressions/ascii.md
+    - Asin: expressions/asin.md
+    - Asinh: expressions/asinh.md
+    - AssertTrue: expressions/assert_true.md
+    - Atan: expressions/atan.md
+    - Atan2: expressions/atan2.md
+    - AtLeastNNonNulls: expressions/at_least_n_non_nulls.md
+    - Between: expressions/between.md
+    - Bin: expressions/bin.md
+    - BinaryPad: expressions/binary_pad.md
+    - BinaryPredicate: expressions/binary_predicate.md
+    - BitLength: expressions/bit_length.md
+    - BitmapAndAgg: expressions/bitmap_and_agg.md
+    - BitmapBitPosition: expressions/bitmap_bit_position.md
+    - BitmapBucketNumber: expressions/bitmap_bucket_number.md
+    - BitmapConstructAgg: expressions/bitmap_construct_agg.md
+    - BitmapCount: expressions/bitmap_count.md
+    - BitmapOrAgg: expressions/bitmap_or_agg.md
     - BitwiseAnd: expressions/bitwise_and.md
     - BitwiseCount: expressions/bitwise_count.md
     - BitwiseGet: expressions/bitwise_get.md
     - BitwiseNot: expressions/bitwise_not.md
     - BitwiseOr: expressions/bitwise_or.md
     - BitwiseXor: expressions/bitwise_xor.md
+    - BloomFilterAggregate: expressions/bloom_filter_aggregate.md
+    - BloomFilterMightContain: expressions/bloom_filter_might_contain.md
+    - BoolAnd: expressions/bool_and.md
+    - BoolOr: expressions/bool_or.md
+    - BoundReference: expressions/bound_reference.md
+    - BRound: expressions/b_round.md
+    - Bucket: expressions/bucket.md
+    - CallMethodViaReflection: expressions/call_method_via_reflection.md
+    - Cbrt: expressions/cbrt.md
+    - Ceil: expressions/ceil.md
+    - CheckConstraint: expressions/check_constraint.md
+    - CheckOverflow: expressions/check_overflow.md
+    - CheckOverflowInSum: expressions/check_overflow_in_sum.md
+    - CheckOverflowInTableInsert: expressions/check_overflow_in_table_insert.md
+    - Chr: expressions/chr.md
+    - Coalesce: expressions/coalesce.md
+    - Collate: expressions/collate.md
+    - Collation: expressions/collation.md
+    - CollationAwareMurmur3Hash: expressions/collation_aware_murmur3_hash.md
+    - CollationAwareXxHash64: expressions/collation_aware_xx_hash64.md
+    - CollationKey: expressions/collation_key.md
+    - Collations: expressions/collations.md
+    - CommonExpressionRef: expressions/common_expression_ref.md
+    - Concat: expressions/concat.md
+    - ConcatWs: expressions/concat_ws.md
+    - Contains: expressions/contains.md
+    - Conv: expressions/conv.md
+    - ConvertTimezone: expressions/convert_timezone.md
+    - Cos: expressions/cos.md
+    - Cosh: expressions/cosh.md
+    - Cot: expressions/cot.md
+    - Count: expressions/count.md
+    - CountIf: expressions/count_if.md
+    - CountMinSketchAgg: expressions/count_min_sketch_agg.md
+    - Crc32: expressions/crc32.md
+    - CreateArray: expressions/create_array.md
+    - CreateMap: expressions/create_map.md
+    - CreateNamedStruct: expressions/create_named_struct.md
+    - Csc: expressions/csc.md
     - CsvToStructs: expressions/csv_to_structs.md
+    - CurrentBatchTimestamp: expressions/current_batch_timestamp.md
+    - CurrentCatalog: expressions/current_catalog.md
+    - CurrentDatabase: expressions/current_database.md
+    - CurrentDate: expressions/current_date.md
+    - CurrentTimeZone: expressions/current_time_zone.md
+    - CurrentUser: expressions/current_user.md
+    - DateAdd: expressions/date_add.md
+    - DateAddInterval: expressions/date_add_interval.md
+    - DateDiff: expressions/date_diff.md
+    - DateFormatClass: expressions/date_format_class.md
+    - DateFromUnixDate: expressions/date_from_unix_date.md
+    - DateSub: expressions/date_sub.md
+    - DatetimeSub: expressions/datetime_sub.md
+    - Days: expressions/days.md
+    - DecimalAddNoOverflowCheck: expressions/decimal_add_no_overflow_check.md
+    - DecimalDivideWithOverflowCheck: expressions/decimal_divide_with_overflow_check.md
+    - Decode: expressions/decode.md
     - DirectShufflePartitionId: expressions/direct_shuffle_partition_id.md
+    - DistributedSequenceId: expressions/distributed_sequence_id.md
     - DivideDtInterval: expressions/divide_dt_interval.md
     - DivideYmInterval: expressions/divide_ym_interval.md
+    - DynamicPruningExpression: expressions/dynamic_pruning_expression.md
+    - DynamicPruningSubquery: expressions/dynamic_pruning_subquery.md
+    - Elt: expressions/elt.md
+    - Empty2Null: expressions/empty2_null.md
+    - Encode: expressions/encode.md
+    - EndsWith: expressions/ends_with.md
+    - EqualNull: expressions/equal_null.md
+    - EulerNumber: expressions/euler_number.md
     - Ewm: expressions/ewm.md
+    - Exists: expressions/exists.md
+    - Exp: expressions/exp.md
+    - Explode: expressions/explode.md
+    - Expm1: expressions/expm1.md
+    - ExpressionProxy: expressions/expression_proxy.md
+    - Extract: expressions/extract.md
+    - Factorial: expressions/factorial.md
+    - FindInSet: expressions/find_in_set.md
+    - First: expressions/first.md
+    - Flatten: expressions/flatten.md
+    - Floor: expressions/floor.md
+    - ForeignKeyConstraint: expressions/foreign_key_constraint.md
+    - FormatNumber: expressions/format_number.md
+    - FormatString: expressions/format_string.md
+    - FromAvro: expressions/from_avro.md
     - FromProtobuf: expressions/from_protobuf.md
+    - FromUnixTime: expressions/from_unix_time.md
+    - FunctionTableSubqueryArgumentExpression: expressions/function_table_subquery_argument_expression.md
+    - GeneratorOuter: expressions/generator_outer.md
+    - Get: expressions/get.md
+    - GetArrayItem: expressions/get_array_item.md
+    - GetArrayStructFields: expressions/get_array_struct_fields.md
+    - GetJsonObject: expressions/get_json_object.md
+    - GetStructField: expressions/get_struct_field.md
+    - Greatest: expressions/greatest.md
     - Grouping: expressions/grouping.md
     - GroupingId: expressions/grouping_id.md
+    - Hex: expressions/hex.md
+    - HistogramNumeric: expressions/histogram_numeric.md
+    - HiveHash: expressions/hive_hash.md
+    - HllSketchAgg: expressions/hll_sketch_agg.md
     - HllSketchEstimate: expressions/hll_sketch_estimate.md
     - HllUnion: expressions/hll_union.md
+    - HllUnionAgg: expressions/hll_union_agg.md
+    - Hours: expressions/hours.md
+    - HoursOfTime: expressions/hours_of_time.md
+    - HyperLogLogPlusPlus: expressions/hyper_log_log_plus_plus.md
+    - Hypot: expressions/hypot.md
+    - If: expressions/if.md
+    - ILike: expressions/i_like.md
+    - In: expressions/in.md
+    - InitCap: expressions/init_cap.md
+    - Inline: expressions/inline.md
     - InputFileBlockLength: expressions/input_file_block_length.md
     - InputFileBlockStart: expressions/input_file_block_start.md
     - InputFileName: expressions/input_file_name.md
+    - InSet: expressions/in_set.md
+    - InSubquery: expressions/in_subquery.md
+    - InterpretedPredicate: expressions/interpreted_predicate.md
+    - IsNaN: expressions/is_na_n.md
+    - IsNotNull: expressions/is_not_null.md
+    - IsNull: expressions/is_null.md
+    - IsValidUtf8: expressions/is_valid_utf8.md
+    - JsonObjectKeys: expressions/json_object_keys.md
+    - JsonTuple: expressions/json_tuple.md
+    - KllSketchAggBigint: expressions/kll_sketch_agg_bigint.md
+    - KllSketchAggDouble: expressions/kll_sketch_agg_double.md
+    - KllSketchAggFloat: expressions/kll_sketch_agg_float.md
+    - KnownFloatingPointNormalized: expressions/known_floating_point_normalized.md
+    - KnownNotContainsNull: expressions/known_not_contains_null.md
+    - KnownNotNull: expressions/known_not_null.md
+    - KnownNullable: expressions/known_nullable.md
     - Lag: expressions/lag.md
+    - LambdaFunction: expressions/lambda_function.md
+    - Last: expressions/last.md
+    - LastDay: expressions/last_day.md
+    - LateralColumnAliasReference: expressions/lateral_column_alias_reference.md
+    - LateralSubquery: expressions/lateral_subquery.md
     - Lead: expressions/lead.md
+    - Least: expressions/least.md
+    - Left: expressions/left.md
+    - Length: expressions/length.md
+    - LengthOfJsonArray: expressions/length_of_json_array.md
+    - Levenshtein: expressions/levenshtein.md
+    - Like: expressions/like.md
+    - ListQuery: expressions/list_query.md
+    - Literal: expressions/literal.md
+    - LocalTimestamp: expressions/local_timestamp.md
+    - Log: expressions/log.md
+    - Log10: expressions/log10.md
+    - Log1p: expressions/log1p.md
+    - Log2: expressions/log2.md
+    - Logarithm: expressions/logarithm.md
+    - Lower: expressions/lower.md
+    - Luhncheck: expressions/luhncheck.md
+    - MakeDate: expressions/make_date.md
+    - MakeDecimal: expressions/make_decimal.md
     - MakeDtInterval: expressions/make_dt_interval.md
     - MakeInterval: expressions/make_interval.md
+    - MakeTime: expressions/make_time.md
+    - MakeTimestamp: expressions/make_timestamp.md
+    - MakeTimestampFromDateTime: expressions/make_timestamp_from_date_time.md
+    - MakeTimestampNtz: expressions/make_timestamp_ntz.md
+    - MakeValidUtf8: expressions/make_valid_utf8.md
     - MakeYmInterval: expressions/make_ym_interval.md
+    - MapConcat: expressions/map_concat.md
+    - MapContainsKey: expressions/map_contains_key.md
+    - MapEntries: expressions/map_entries.md
+    - MapFilter: expressions/map_filter.md
+    - MapFromArrays: expressions/map_from_arrays.md
+    - MapFromEntries: expressions/map_from_entries.md
+    - MapKeys: expressions/map_keys.md
+    - MapSort: expressions/map_sort.md
+    - MapValues: expressions/map_values.md
+    - MapZipWith: expressions/map_zip_with.md
+    - Mask: expressions/mask.md
+    - Max: expressions/max.md
+    - Md5: expressions/md5.md
+    - Measure: expressions/measure.md
+    - Median: expressions/median.md
+    - Min: expressions/min.md
+    - MinutesOfTime: expressions/minutes_of_time.md
     - MonotonicallyIncreasingId: expressions/monotonically_increasing_id.md
+    - Months: expressions/months.md
+    - MonthsBetween: expressions/months_between.md
     - MultiplyDtInterval: expressions/multiply_dt_interval.md
     - MultiplyYmInterval: expressions/multiply_ym_interval.md
+    - Murmur3Hash: expressions/murmur3_hash.md
     - NamedArgumentExpression: expressions/named_argument_expression.md
+    - NaNvl: expressions/na_nvl.md
+    - NextDay: expressions/next_day.md
+    - Not: expressions/not.md
     - NthValue: expressions/nth_value.md
+    - NullIf: expressions/null_if.md
+    - NullIfZero: expressions/null_if_zero.md
     - NullIndex: expressions/null_index.md
+    - Nvl: expressions/nvl.md
+    - Nvl2: expressions/nvl2.md
+    - OctetLength: expressions/octet_length.md
+    - Or: expressions/or.md
+    - OuterReference: expressions/outer_reference.md
+    - OuterScopeReference: expressions/outer_scope_reference.md
+    - Overlay: expressions/overlay.md
+    - PandasProduct: expressions/pandas_product.md
+    - ParseToDate: expressions/parse_to_date.md
+    - ParseToTimestamp: expressions/parse_to_timestamp.md
+    - ParseUrl: expressions/parse_url.md
+    - PercentileCont: expressions/percentile_cont.md
+    - Pi: expressions/pi.md
     - PipeExpression: expressions/pipe_expression.md
+    - PivotFirst: expressions/pivot_first.md
+    - PosExplode: expressions/pos_explode.md
+    - Pow: expressions/pow.md
+    - PreciseTimestampConversion: expressions/precise_timestamp_conversion.md
     - PrettyPythonUdf: expressions/pretty_python_udf.md
+    - PrimaryKeyConstraint: expressions/primary_key_constraint.md
+    - PrintToStderr: expressions/print_to_stderr.md
+    - Product: expressions/product.md
     - PythonUdaf: expressions/python_udaf.md
     - PythonUdf: expressions/python_udf.md
     - PythonUdtf: expressions/python_udtf.md
+    - Quote: expressions/quote.md
+    - RaiseError: expressions/raise_error.md
+    - Rand: expressions/rand.md
+    - Randn: expressions/randn.md
+    - RandStr: expressions/rand_str.md
+    - RegExpCount: expressions/reg_exp_count.md
+    - RegExpReplace: expressions/reg_exp_replace.md
+    - RegExpSubStr: expressions/reg_exp_sub_str.md
+    - RegrAvgX: expressions/regr_avg_x.md
+    - RegrAvgY: expressions/regr_avg_y.md
+    - RegrCount: expressions/regr_count.md
+    - RegrIntercept: expressions/regr_intercept.md
+    - RegrSlope: expressions/regr_slope.md
+    - RegrSxx: expressions/regr_sxx.md
+    - RegrSyy: expressions/regr_syy.md
+    - ReplicateRows: expressions/replicate_rows.md
+    - ResolvedCollation: expressions/resolved_collation.md
+    - Reverse: expressions/reverse.md
+    - Right: expressions/right.md
+    - Rint: expressions/rint.md
+    - RLike: expressions/r_like.md
+    - Round: expressions/round.md
+    - RoundCeil: expressions/round_ceil.md
+    - RoundFloor: expressions/round_floor.md
+    - ScalarSubquery: expressions/scalar_subquery.md
+    - ScalaUdf: expressions/scala_udf.md
+    - SchemaOfAvro: expressions/schema_of_avro.md
     - SchemaOfCsv: expressions/schema_of_csv.md
+    - SchemaOfJson: expressions/schema_of_json.md
+    - SchemaOfXml: expressions/schema_of_xml.md
+    - Sec: expressions/sec.md
+    - SecondsOfTime: expressions/seconds_of_time.md
+    - SecondsOfTimeWithFraction: expressions/seconds_of_time_with_fraction.md
+    - SecondsToTimestamp: expressions/seconds_to_timestamp.md
     - SemiStructuredExtract: expressions/semi_structured_extract.md
+    - Sequence: expressions/sequence.md
+    - SessionWindow: expressions/session_window.md
+    - Sha1: expressions/sha1.md
+    - Sha2: expressions/sha2.md
+    - Shuffle: expressions/shuffle.md
+    - Signum: expressions/signum.md
+    - Sin: expressions/sin.md
+    - Sinh: expressions/sinh.md
+    - Size: expressions/size.md
+    - Slice: expressions/slice.md
+    - SortArray: expressions/sort_array.md
     - SortOrder: expressions/sort_order.md
     - SortPrefix: expressions/sort_prefix.md
+    - SoundEx: expressions/sound_ex.md
     - SparkPartitionId: expressions/spark_partition_id.md
+    - SparkVersion: expressions/spark_version.md
+    - SplitPart: expressions/split_part.md
+    - SqlKeywords: expressions/sql_keywords.md
+    - Sqrt: expressions/sqrt.md
+    - Stack: expressions/stack.md
+    - StartsWith: expressions/starts_with.md
+    - StringDecode: expressions/string_decode.md
+    - StringInstr: expressions/string_instr.md
+    - StringLocate: expressions/string_locate.md
+    - StringLPad: expressions/string_l_pad.md
+    - StringRepeat: expressions/string_repeat.md
+    - StringReplace: expressions/string_replace.md
+    - StringSpace: expressions/string_space.md
+    - StringSplit: expressions/string_split.md
+    - StringSplitSql: expressions/string_split_sql.md
+    - StringToMap: expressions/string_to_map.md
+    - StringTranslate: expressions/string_translate.md
+    - StringTrim: expressions/string_trim.md
+    - StringTrimBoth: expressions/string_trim_both.md
+    - StringTrimLeft: expressions/string_trim_left.md
+    - StringTrimRight: expressions/string_trim_right.md
     - StructsToCsv: expressions/structs_to_csv.md
+    - StructsToJson: expressions/structs_to_json.md
+    - StructsToXml: expressions/structs_to_xml.md
+    - Substring: expressions/substring.md
+    - SubstringIndex: expressions/substring_index.md
+    - SubtractDates: expressions/subtract_dates.md
+    - SubtractTimes: expressions/subtract_times.md
+    - SubtractTimestamps: expressions/subtract_timestamps.md
+    - Tan: expressions/tan.md
+    - Tanh: expressions/tanh.md
     - ThetaDifference: expressions/theta_difference.md
     - ThetaIntersection: expressions/theta_intersection.md
+    - ThetaIntersectionAgg: expressions/theta_intersection_agg.md
+    - ThetaSketchAgg: expressions/theta_sketch_agg.md
     - ThetaSketchEstimate: expressions/theta_sketch_estimate.md
     - ThetaUnion: expressions/theta_union.md
+    - ThetaUnionAgg: expressions/theta_union_agg.md
+    - TimeAddInterval: expressions/time_add_interval.md
+    - TimeDiff: expressions/time_diff.md
+    - TimestampAdd: expressions/timestamp_add.md
+    - TimestampAddInterval: expressions/timestamp_add_interval.md
+    - TimestampAddYmInterval: expressions/timestamp_add_ym_interval.md
+    - TimestampDiff: expressions/timestamp_diff.md
+    - TimeTrunc: expressions/time_trunc.md
+    - TimeWindow: expressions/time_window.md
+    - ToAvro: expressions/to_avro.md
+    - ToBinary: expressions/to_binary.md
     - ToCharacter: expressions/to_character.md
+    - ToDegrees: expressions/to_degrees.md
+    - ToJavaArray: expressions/to_java_array.md
+    - ToPrettyString: expressions/to_pretty_string.md
     - ToProtobuf: expressions/to_protobuf.md
+    - ToRadians: expressions/to_radians.md
+    - ToTime: expressions/to_time.md
+    - TransformExpression: expressions/transform_expression.md
+    - TransformKeys: expressions/transform_keys.md
+    - TransformValues: expressions/transform_values.md
     - TryAdd: expressions/try_add.md
+    - TryAesDecrypt: expressions/try_aes_decrypt.md
     - TryDivide: expressions/try_divide.md
+    - TryElementAt: expressions/try_element_at.md
     - TryEval: expressions/try_eval.md
     - TryMakeInterval: expressions/try_make_interval.md
+    - TryMakeTimestamp: expressions/try_make_timestamp.md
+    - TryMakeTimestampFromDateTime: expressions/try_make_timestamp_from_date_time.md
     - TryMod: expressions/try_mod.md
     - TryMultiply: expressions/try_multiply.md
+    - TryParseUrl: expressions/try_parse_url.md
+    - TryReflect: expressions/try_reflect.md
     - TrySubtract: expressions/try_subtract.md
+    - TryToBinary: expressions/try_to_binary.md
+    - TryUrlDecode: expressions/try_url_decode.md
+    - TryValidateUtf8: expressions/try_validate_utf8.md
+    - TypeOf: expressions/type_of.md
+    - UnaryMinus: expressions/unary_minus.md
+    - UnaryPositive: expressions/unary_positive.md
+    - UnBase64: expressions/un_base64.md
+    - Unhex: expressions/unhex.md
+    - Uniform: expressions/uniform.md
+    - UniqueConstraint: expressions/unique_constraint.md
+    - UnixDate: expressions/unix_date.md
+    - UnresolvedCollation: expressions/unresolved_collation.md
+    - UnresolvedNamedLambdaVariable: expressions/unresolved_named_lambda_variable.md
     - UnresolvedWindowExpression: expressions/unresolved_window_expression.md
+    - UnscaledValue: expressions/unscaled_value.md
+    - UnwrapUdt: expressions/unwrap_udt.md
+    - UpCast: expressions/up_cast.md
+    - UpdateFields: expressions/update_fields.md
+    - Upper: expressions/upper.md
+    - UrlDecode: expressions/url_decode.md
+    - UrlEncode: expressions/url_encode.md
+    - UserDefinedGenerator: expressions/user_defined_generator.md
+    - Uuid: expressions/uuid.md
+    - V2Aggregator: expressions/v2_aggregator.md
+    - ValidateUtf8: expressions/validate_utf8.md
+    - VariableReference: expressions/variable_reference.md
+    - VectorCosineSimilarity: expressions/vector_cosine_similarity.md
+    - VectorInnerProduct: expressions/vector_inner_product.md
+    - VectorL2Distance: expressions/vector_l2_distance.md
+    - WidthBucket: expressions/width_bucket.md
     - WindowExpression: expressions/window_expression.md
     - WindowSpecDefinition: expressions/window_spec_definition.md
+    - WindowTime: expressions/window_time.md
+    - With: expressions/with.md
+    - XmlToStructs: expressions/xml_to_structs.md
+    - XxHash64: expressions/xx_hash64.md
+    - Years: expressions/years.md
+    - ZeroIfNull: expressions/zero_if_null.md
+    - ZipWith: expressions/zip_with.md
   - Operators:
     - Overview: operators/index.md
     - BroadcastExchangeExec: operators/broadcast_exchange_exec.md
