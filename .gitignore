@@ -1,0 +1,45 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Source repos
+spark
+datafusion
+datafusion-comet
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files
+data/
+*.parquet
+
+# Vector database (regenerate with scripts/build_index.py)
+chroma_db/
+
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Logs
+logs/
+*.log
+wandb/
