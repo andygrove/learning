@@ -43,3 +43,6 @@ checkpoints/
 logs/
 *.log
 wandb/
+
+# MkDocs generated site
+site/
