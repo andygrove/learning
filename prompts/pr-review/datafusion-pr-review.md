@@ -14,6 +14,28 @@ Focus areas:
 - Test coverage
 ```
 
+## Before You Start
+
+### Skip Your Own PRs
+
+**Do not review PRs created by `andygrove`.** These are your own PRs and reviewing them would be self-review.
+
+### Review Existing Comments First
+
+Before adding any comments to a PR:
+
+1. **Read all existing review comments** on the PR
+2. **Check the conversation tab** for any discussion
+3. **Avoid duplicating feedback** that others have already provided
+4. **Build on existing discussions** rather than starting new threads on the same topic
+
+```bash
+# View existing comments on a PR
+gh pr view XXXX --repo apache/datafusion --comments
+```
+
+---
+
 ## Review Workflow
 
 ### 1. Gather Context
