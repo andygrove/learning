@@ -69,7 +69,9 @@ For expression PRs, verify against `sparkreference/docs/expressions/`:
    - Spark behavior may differ between legacy and ANSI modes
    - PR should handle both or mark as `Incompatible`
 
-### 3. Review Checklist
+### 3. Check Against Implementation Guidelines
+
+**Always verify PRs follow the implementation guidelines in `prompts/implementation/comet-expression.md`.**
 
 #### Scala Serde (`spark/src/main/scala/org/apache/comet/serde/`)
 
@@ -80,6 +82,7 @@ For expression PRs, verify against `sparkreference/docs/expressions/`:
   - `Compatible()` - matches Spark exactly
   - `Incompatible(Some("reason"))` - differs in documented ways
   - `Unsupported(Some("reason"))` - cannot be implemented
+- [ ] Serde in appropriate file (datetime.scala, strings.scala, arithmetic.scala, etc.)
 
 #### Registration (`QueryPlanSerde.scala`)
 
@@ -106,17 +109,20 @@ Location: `native/proto/src/proto/expr.proto`
 
 #### Tests (`spark/src/test/scala/org/apache/comet/`)
 
-- [ ] Basic functionality tested
-- [ ] Null handling tested
+**CRITICAL: Verify all test requirements from implementation guidelines:**
+
+- [ ] Basic functionality tested with `checkSparkAnswerAndOperator`
+- [ ] Null handling tested (`SELECT expression(NULL)`)
 - [ ] Edge cases from Spark reference tested
-- [ ] Uses `checkSparkAnswerAndOperator` to verify Spark match
-- [ ] Literal tests disable constant folding:
+- [ ] **CRITICAL: Literal tests MUST disable constant folding:**
   ```scala
   withSQLConf(SQLConf.OPTIMIZER_EXCLUDED_RULES.key ->
       "org.apache.spark.sql.catalyst.optimizer.ConstantFolding") {
     checkSparkAnswerAndOperator("SELECT func(literal)")
   }
   ```
+- [ ] Tests with column data (not just literals) using table or generated data
+- [ ] Consider using `FuzzDataGenerator.generateDataFrame` for comprehensive testing
 
 ### 4. Using Resources for Review
 
