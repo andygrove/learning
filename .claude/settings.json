@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git pull*)",
+      "Bash(gh issue *)",
+      "Bash(gh pr *)",
+      "Bash(make*)",
+      "Bash(./mvnw *)",
+      "Bash(cargo *)",
+      "Bash(cd /home/andy/git/personal/learning/datafusion-comet*)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(tail *)",
+      "Bash(rm -rf ~/.m2/repository/org/apache/datafusion/comet-*)"
+    ]
+  }
+}
