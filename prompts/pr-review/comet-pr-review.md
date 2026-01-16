@@ -218,4 +218,16 @@ LGTM! Verified:
 - [x] Matches Spark behavior per `sparkreference/docs/expressions/<name>.md`
 - [x] Edge cases covered
 - [x] Tests pass locally
+
+---
+*This review was generated with AI assistance.*
+```
+
+### AI Disclosure
+
+**Always include the following note at the end of every review comment:**
+
+```markdown
+---
+*This review was generated with AI assistance.*
 ```

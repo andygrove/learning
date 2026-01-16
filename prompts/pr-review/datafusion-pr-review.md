@@ -160,6 +160,18 @@ LGTM! A few minor suggestions:
 - [optional improvement 2]
 
 Tested locally and confirmed [what you verified].
+
+---
+*This review was generated with AI assistance.*
+```
+
+### AI Disclosure
+
+**Always include the following note at the end of every review comment:**
+
+```markdown
+---
+*This review was generated with AI assistance.*
 ```
 
 ## Common DataFusion Review Issues
