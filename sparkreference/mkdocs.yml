@@ -153,6 +153,7 @@ nav:
     - DateFormatClass: expressions/date_format_class.md
     - DateFromUnixDate: expressions/date_from_unix_date.md
     - DateSub: expressions/date_sub.md
+    - DateTrunc: expressions/date_trunc.md
     - DatetimeSub: expressions/datetime_sub.md
     - Days: expressions/days.md
     - DecimalAddNoOverflowCheck: expressions/decimal_add_no_overflow_check.md
@@ -225,6 +226,7 @@ nav:
     - IsNull: expressions/is_null.md
     - IsValidUtf8: expressions/is_valid_utf8.md
     - JsonObjectKeys: expressions/json_object_keys.md
+    - JsonToStructs: expressions/json_to_structs.md
     - JsonTuple: expressions/json_tuple.md
     - KllSketchAggBigint: expressions/kll_sketch_agg_bigint.md
     - KllSketchAggDouble: expressions/kll_sketch_agg_double.md
@@ -430,6 +432,7 @@ nav:
     - TransformExpression: expressions/transform_expression.md
     - TransformKeys: expressions/transform_keys.md
     - TransformValues: expressions/transform_values.md
+    - Trunc: expressions/trunc.md
     - TryAdd: expressions/try_add.md
     - TryAesDecrypt: expressions/try_aes_decrypt.md
     - TryDivide: expressions/try_divide.md
