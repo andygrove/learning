@@ -36,6 +36,7 @@ Before adding any comments to a PR:
 2. **Check the conversation tab** for any discussion
 3. **Avoid duplicating feedback** that others have already provided
 4. **Build on existing discussions** rather than starting new threads on the same topic
+5. **If you have no additional concerns beyond what's already discussed, do not comment** - adding "me too" or summary comments wastes reviewers' time
 
 ```bash
 # View existing comments on a PR
