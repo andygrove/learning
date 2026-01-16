@@ -16,32 +16,51 @@ Focus areas:
 
 ## Before You Start
 
-### Skip Your Own PRs
+### PR Eligibility Checks
 
-**Do not review PRs created by `andygrove`.** These are your own PRs and reviewing them would be self-review.
-
-### Skip Draft PRs
-
-**Do not review draft PRs.** Draft PRs are work-in-progress and not ready for review. Check the PR state before reviewing:
+Before reviewing any PR, verify it meets ALL of these criteria:
 
 ```bash
-gh pr view XXXX --repo apache/datafusion --json isDraft
+# Check PR state, author, and labels
+gh pr view XXXX --repo apache/datafusion --json isDraft,author,labels
 ```
+
+**Only review PRs that:**
+1. **Are NOT drafts** - Draft PRs are work-in-progress and not ready for review
+2. **Have the `spark` label** - Focus only on Spark-related PRs
+3. **Are NOT created by `andygrove`** - These are your own PRs (self-review not allowed)
+
+If the PR does not meet all criteria, **do not review it**.
 
 ### Review Existing Comments First
 
-Before adding any comments to a PR:
+**CRITICAL: Before adding ANY comments to a PR, you MUST thoroughly review the existing discussion.**
 
-1. **Read all existing review comments** on the PR
-2. **Check the conversation tab** for any discussion
-3. **Avoid duplicating feedback** that others have already provided
-4. **Build on existing discussions** rather than starting new threads on the same topic
-5. **If you have no additional concerns beyond what's already discussed, do not comment** - adding "me too" or summary comments wastes reviewers' time
+1. **Read ALL existing review comments** on the PR - every single one
+2. **Read the full conversation tab** for any discussion threads
+3. **Understand the context** of what has already been discussed and resolved
+4. **Check if your concern has already been raised** by another reviewer
 
 ```bash
 # View existing comments on a PR
 gh pr view XXXX --repo apache/datafusion --comments
+
+# View the full PR discussion including review comments
+gh api repos/apache/datafusion/pulls/XXXX/comments
+gh api repos/apache/datafusion/pulls/XXXX/reviews
 ```
+
+### Only Comment if Adding Value
+
+**Do NOT add a comment unless it provides NEW information or perspective.** Ask yourself:
+
+- Has this issue already been raised by another reviewer? → **Don't comment**
+- Is this a "me too" agreement with existing feedback? → **Don't comment**
+- Is this summarizing what others have said? → **Don't comment**
+- Does this add a genuinely new concern or suggestion? → **Comment**
+- Does this provide additional technical context others missed? → **Comment**
+
+**If you have nothing new to add beyond what's already discussed, do not leave a review comment.** Redundant comments waste the PR author's time and clutter the discussion.
 
 ---
 
