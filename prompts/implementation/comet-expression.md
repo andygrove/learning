@@ -215,6 +215,22 @@ This means:
 
 ## Create PR
 
+### IMPORTANT: Run `make` First
+
+**Always run `make` before creating a PR** to ensure:
+- Code is properly formatted
+- All tests pass
+- Generated documentation is up-to-date (e.g., `docs/source/user-guide/configs.md`)
+
+```bash
+cd /home/andy/git/personal/learning/datafusion-comet
+make
+```
+
+If `make` updates any generated files, include them in your commit.
+
+### Commit and Push
+
 ```bash
 git add .
 git commit -m "$(cat <<'EOF'
