@@ -109,7 +109,46 @@ python scripts/query.py --backend local -r datafusion -q "How does DataFusion im
 - [ ] Breaking changes are noted and justified
 - [ ] Feature flags used for experimental features
 
-### 3. Key Areas to Examine
+### 3. Check Spark Compatibility (ALWAYS DO THIS)
+
+**This check is MANDATORY for all Spark-labeled PRs, even if the PR already has review comments.**
+
+Use https://sparkreference.io/ to verify the implementation matches Spark's behavior:
+
+1. **Identify the Spark function** being implemented (from PR title/description)
+2. **Look up the function** on sparkreference.io
+3. **Compare the implementation** against Spark's documented behavior:
+   - Function signature (argument types, return type)
+   - Null handling behavior
+   - Edge cases (empty inputs, special values, overflow)
+   - Type coercion rules
+   - Format strings (for date/time functions)
+
+```bash
+# Fetch Spark reference documentation
+# Replace <function_name> with the actual function (e.g., date_diff, trunc, hex)
+curl -s "https://sparkreference.io/docs/expressions/<function_name>" | head -100
+```
+
+**Only comment on compatibility issues if:**
+- The issue has NOT already been raised by another reviewer
+- The issue represents a genuine behavioral difference from Spark
+- The PR does not already document the deviation as intentional
+
+Example compatibility comment:
+```markdown
+## Spark Compatibility Note
+
+According to [sparkreference.io](https://sparkreference.io/docs/expressions/<function>),
+Spark's `<function>` handles `<edge_case>` by returning `<expected_result>`.
+
+The current implementation returns `<actual_result>` instead. Should this match Spark's behavior?
+
+---
+*This review was generated with AI assistance.*
+```
+
+### 4. Key Areas to Examine (Reference)
 
 #### Physical Plan Changes
 Location: `datafusion/physical-plan/src/`
@@ -143,7 +182,7 @@ Look for:
 - Type coercion is consistent
 - Vectorized array operations used correctly
 
-### 4. Using ChromaDB for Deep Dives
+### 5. Using ChromaDB for Deep Dives
 
 When you need to understand existing patterns:
 
@@ -158,7 +197,7 @@ python scripts/query.py -r datafusion -q "how are errors handled in physical ope
 python scripts/query.py -r datafusion -q "memory tracking in joins"
 ```
 
-### 5. Check CI Test Failures
+### 6. Check CI Test Failures
 
 **Always check the CI status and summarize any test failures in your review.**
 
