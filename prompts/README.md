@@ -9,8 +9,10 @@ prompts/
 ├── pr-review/                    # PR review prompts
 │   ├── datafusion-pr-review.md   # Review DataFusion PRs
 │   └── comet-pr-review.md        # Review Comet PRs
-└── implementation/               # Implementation prompts
-    └── comet-expression.md       # Implement Comet expressions
+├── implementation/               # Implementation prompts
+│   └── comet-expression.md       # Implement Comet expressions
+└── issues/                       # Issue creation prompts
+    └── comet-issue.md            # Create Comet feature issues
 ```
 
 ## Available Prompts
@@ -27,6 +29,12 @@ prompts/
 | Prompt | Use When |
 |--------|----------|
 | `implementation/comet-expression.md` | Implementing a Spark expression in Comet |
+
+### Issue Creation
+
+| Prompt | Use When |
+|--------|----------|
+| `issues/comet-issue.md` | Creating GitHub issues for unsupported Spark expressions |
 
 ## Using Prompts with Claude Code
 
@@ -62,7 +70,7 @@ All prompts leverage these resources:
 
 When adding a new prompt:
 
-1. Place it in the appropriate subdirectory (`pr-review/` or `implementation/`)
+1. Place it in the appropriate subdirectory (`pr-review/`, `implementation/`, or `issues/`)
 2. Include sections for:
    - Quick start / usage
    - How to use ChromaDB queries

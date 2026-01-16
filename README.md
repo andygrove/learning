@@ -80,10 +80,10 @@ Create well-formatted issues for Comet expressions:
 
 ```bash
 # Preview
-python generate_comet_issues.py --expression levenshtein --dry-run
+python scripts/generate_comet_issues.py --expression levenshtein --dry-run
 
 # Create
-python generate_comet_issues.py --expression levenshtein --create-issues
+python scripts/generate_comet_issues.py --expression levenshtein --create-issues
 ```
 
 ## Project Structure

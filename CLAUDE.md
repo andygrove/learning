@@ -10,13 +10,16 @@ learning/
 │   ├── pr-review/                 # PR review prompts
 │   │   ├── datafusion-pr-review.md
 │   │   └── comet-pr-review.md
-│   └── implementation/            # Implementation prompts
-│       └── comet-expression.md
+│   ├── implementation/            # Implementation prompts
+│   │   └── comet-expression.md
+│   └── issues/                    # Issue creation prompts
+│       └── comet-issue.md
 ├── docs/                          # Project documentation
 │   ├── comet_expressions_pipeline.md  # Expression tracking
 │   └── sample_github_issue.md         # Issue template example
 ├── src/                           # RAG system modules
 ├── scripts/                       # Utility scripts
+│   └── generate_comet_issues.py   # Issue generation script
 ├── sparkreference/                # Spark expression reference docs
 ├── chroma_db/                     # Vector database
 ├── datafusion/                    # DataFusion source
@@ -51,13 +54,13 @@ Quick workflow:
 
 ```bash
 # Preview issue
-python3 generate_comet_issues.py --expression <name> --dry-run
+python scripts/generate_comet_issues.py --expression <name> --dry-run
 
 # Create issue
-python3 generate_comet_issues.py --expression <name> --create-issues
+python scripts/generate_comet_issues.py --expression <name> --create-issues
 
 # List available expressions
-python3 generate_comet_issues.py --list-available
+python scripts/generate_comet_issues.py --list-available
 ```
 
 ## Key Resources
