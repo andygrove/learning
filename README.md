@@ -1,21 +1,26 @@
-# Learning - Code RAG for DataFusion, Comet, and Spark
+# Learning - DataFusion, Comet & Spark Expert System
 
-A retrieval-augmented generation (RAG) system for querying the Apache DataFusion, DataFusion Comet, and Apache Spark codebases. Ask natural language questions about the code and get answers grounded in the actual source.
+A knowledge base and tooling for becoming an expert in Apache DataFusion, DataFusion Comet, and Apache Spark. Includes:
 
-## Features
-
-- **103k+ indexed code chunks** from DataFusion (Rust), Comet (Rust/Scala), and Spark (Scala/Java)
-- **Semantic search** using sentence-transformers embeddings
-- **Multiple LLM backends**: local models (free), Claude API, or context-only mode
-- **Smart code chunking** that respects function/class boundaries
+- **RAG System**: Semantic code search over 103k+ indexed code chunks
+- **Spark Reference**: Comprehensive documentation for 442 Spark expressions
+- **Claude Code Prompts**: Structured prompts for PR review and implementation
 
 ## Quick Start
 
-### 1. Clone the Repository
+### 1. Clone and Setup
 
 ```bash
 git clone <this-repo>
 cd learning
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install sentence-transformers chromadb anthropic
 ```
 
 ### 2. Clone Source Repositories
@@ -26,206 +31,111 @@ git clone --depth 1 https://github.com/apache/datafusion-comet.git
 git clone --depth 1 https://github.com/apache/spark.git
 ```
 
-### 3. Set Up Virtual Environment
-
-```bash
-# Create virtual environment
-python3 -m venv .venv
-
-# Activate it
-source .venv/bin/activate  # Linux/macOS
-# or: .venv\Scripts\activate  # Windows
-
-# Upgrade pip
-pip install --upgrade pip
-```
-
-### 4. Install Dependencies
-
-```bash
-# Install PyTorch with CUDA support (for NVIDIA GPUs)
-pip install torch --index-url https://download.pytorch.org/whl/cu121
-
-# Install remaining dependencies
-pip install sentence-transformers chromadb numpy pandas matplotlib jupyter tqdm
-
-# For local LLM inference
-pip install transformers accelerate bitsandbytes
-
-# Optional: for Claude API
-pip install anthropic
-```
-
-### 5. Build the Index
-
-This indexes all source files into a vector database (~5-10 minutes):
+### 3. Build the Index
 
 ```bash
 python scripts/build_index.py
 ```
 
-### 6. Query the Codebase
+## Core Features
+
+### Semantic Code Search
+
+Query the indexed codebases using natural language:
 
 ```bash
-# Interactive mode with local model (recommended)
+# Interactive mode
 python scripts/query.py --backend local
 
-# Single query
-python scripts/query.py --backend local -q "How does DataFusion implement hash joins?"
-
-# Filter by repository
-python scripts/query.py --backend local -r spark -q "How does Catalyst optimize queries?"
-
-# Context-only mode (just shows retrieved code, no LLM)
-python scripts/query.py -q "shuffle implementation"
+# Single query with repo filter
+python scripts/query.py -r datafusion -q "How does DataFusion implement hash joins?"
+python scripts/query.py -r spark -q "DateTrunc expression implementation"
 ```
 
-## Usage Modes
+### Spark Reference Documentation
 
-### Local Model (Free, Runs on GPU)
-
-Uses code-focused models that run entirely on your GPU:
+Comprehensive documentation for Spark SQL expressions:
 
 ```bash
-python scripts/query.py --backend local
+# View expression spec
+cat sparkreference/docs/expressions/date_trunc.md
+
+# Serve as website
+./scripts/docs-serve.sh
 ```
 
-Available model presets:
+### Claude Code Prompts
 
-| Preset | Size | Quantized | Notes |
-|--------|------|-----------|-------|
-| `deepseek-coder-1.3b` | 2.5GB | No | Default, fast, good quality |
-| `deepseek-coder-6.7b` | ~4GB | Yes (4-bit) | Better quality, slower |
-| `codellama-7b` | ~4GB | Yes (4-bit) | Good for code |
-| `qwen-coder-1.5b` | ~3GB | No | Alternative small model |
+Structured prompts for common workflows:
+
+| Prompt | Purpose |
+|--------|---------|
+| `prompts/pr-review/datafusion-pr-review.md` | Review DataFusion PRs |
+| `prompts/pr-review/comet-pr-review.md` | Review Comet PRs |
+| `prompts/implementation/comet-expression.md` | Implement Comet expressions |
+
+### GitHub Issue Generation
+
+Create well-formatted issues for Comet expressions:
 
 ```bash
-# Use a specific model
-python scripts/query.py --backend local --model deepseek-coder-6.7b
+# Preview
+python generate_comet_issues.py --expression levenshtein --dry-run
+
+# Create
+python generate_comet_issues.py --expression levenshtein --create-issues
 ```
 
-### Claude API (Requires API Key)
+## Project Structure
 
-For higher quality answers using Claude:
+```
+learning/
+├── prompts/                    # Claude Code session prompts
+│   ├── pr-review/              # PR review prompts
+│   └── implementation/         # Implementation prompts
+├── docs/                       # Project documentation
+├── src/                        # RAG system modules
+│   ├── chunker.py              # Code parsing
+│   ├── indexer.py              # ChromaDB indexing
+│   └── query.py                # Query interface
+├── scripts/                    # CLI tools
+├── sparkreference/             # Spark expression docs (442 files)
+├── chroma_db/                  # Vector database
+├── datafusion/                 # DataFusion source
+├── datafusion-comet/           # Comet source
+└── spark/                      # Spark source
+```
+
+## Requirements
+
+- Python 3.10+
+- NVIDIA GPU with 8GB+ VRAM (for local LLM inference)
+- ~15GB disk space
+
+## LLM Backends
+
+### Local Models (Free)
+
+```bash
+python scripts/query.py --backend local --model deepseek-coder-1.3b
+```
+
+### Claude API
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 python scripts/query.py --backend claude
 ```
 
-Get an API key at https://console.anthropic.com
-
-### Context-Only Mode
-
-Just retrieves and displays relevant code without LLM generation:
+### Context Only (No LLM)
 
 ```bash
-python scripts/query.py -q "your question"
+python scripts/query.py -q "your query"
 ```
 
-## Interactive Commands
+## Contributing
 
-When running in interactive mode:
-
-- Type your question and press Enter
-- `@repo question` - filter by repository (e.g., `@datafusion how are plans executed?`)
-- `stats` - show index statistics
-- `quit` - exit
-
-## Project Structure
-
-```
-learning/
-├── src/
-│   ├── __init__.py
-│   ├── chunker.py      # Code parsing and chunking
-│   ├── indexer.py      # Embedding and ChromaDB indexing
-│   └── query.py        # RAG query interface with LLM backends
-├── scripts/
-│   ├── build_index.py  # Build/rebuild the vector index
-│   └── query.py        # CLI query interface
-├── chroma_db/          # Vector database (created after indexing)
-├── datafusion/         # DataFusion source (clone separately)
-├── datafusion-comet/   # Comet source (clone separately)
-├── spark/              # Spark source (clone separately)
-├── .venv/              # Python virtual environment
-├── pyproject.toml      # Project configuration
-└── README.md
-```
-
-## Requirements
-
-- Python 3.10+
-- NVIDIA GPU with 8GB+ VRAM (for local models)
-- ~15GB disk space (repos + index + model)
-
-## Rebuilding the Index
-
-If you update the source repositories:
-
-```bash
-# Pull latest changes
-cd datafusion && git pull && cd ..
-cd datafusion-comet && git pull && cd ..
-cd spark && git pull && cd ..
-
-# Rebuild index (only indexes new/changed files)
-python scripts/build_index.py
-```
-
-## Troubleshooting
-
-**CUDA out of memory**: Try a smaller model (`deepseek-coder-1.3b`) or ensure no other GPU processes are running.
-
-**Slow first query**: The embedding model and LLM are loaded on first query. Subsequent queries are faster.
-
-**Import errors**: Make sure the virtual environment is activated (`source .venv/bin/activate`)
-
-## Spark Internals Reference
-
-The `sparkreference/` directory contains a comprehensive reference guide to Apache Spark SQL internals. This is built as a static website using MkDocs.
-
-### Generating Reference Pages
-
-Reference pages are generated using Claude to analyze Spark source code:
-
-```bash
-# Set API key
-export ANTHROPIC_API_KEY=your_key
-
-# Generate all expressions
-python scripts/generate_spark_reference.py --type expressions
-
-# Generate all operators
-python scripts/generate_spark_reference.py --type operators
-
-# Generate both (with limit)
-python scripts/generate_spark_reference.py --limit 50
-
-# Dry run to see what would be generated
-python scripts/generate_spark_reference.py --dry-run
-```
-
-The generator:
-- Reads Spark source code
-- Uses Claude to analyze and document each class
-- Outputs structured markdown files
-- Skips existing files (use `--skip-existing=false` to regenerate)
-
-### Building the Documentation Site
-
-```bash
-# Install docs dependencies
-pip install -r docs-requirements.txt
-
-# Serve locally with live reload (http://127.0.0.1:8000)
-./scripts/docs-serve.sh
-
-# Build static site to site/ directory
-./scripts/docs-build.sh
-```
-
-### Source Locations
-
-- **Expressions**: `spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/expressions/`
-- **Operators**: `spark/sql/core/src/main/scala/org/apache/spark/sql/execution/`
+See `CLAUDE.md` for detailed instructions on:
+- Reviewing PRs
+- Implementing Comet expressions
+- Creating GitHub issues
