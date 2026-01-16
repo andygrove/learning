@@ -20,6 +20,14 @@ Focus areas:
 
 **Do not review PRs created by `andygrove`.** These are your own PRs and reviewing them would be self-review.
 
+### Skip Draft PRs
+
+**Do not review draft PRs.** Draft PRs are work-in-progress and not ready for review. Check the PR state before reviewing:
+
+```bash
+gh pr view XXXX --repo apache/datafusion --json isDraft
+```
+
 ### Review Existing Comments First
 
 Before adding any comments to a PR:
