@@ -215,19 +215,33 @@ This means:
 
 ## Create PR
 
-### IMPORTANT: Run `make` First
+### IMPORTANT: Pre-PR Checklist
 
-**Always run `make` before creating a PR** to ensure:
-- Code is properly formatted
-- All tests pass
-- Generated documentation is up-to-date (e.g., `docs/source/user-guide/configs.md`)
+**Always complete these steps before creating a PR:**
+
+#### 1. Run `make`
 
 ```bash
 cd /home/andy/git/personal/learning/datafusion-comet
 make
 ```
 
-If `make` updates any generated files, include them in your commit.
+This ensures:
+- Code is properly formatted
+- All tests pass
+- Generated documentation is up-to-date (e.g., `docs/source/user-guide/configs.md`)
+
+#### 2. Run Prettier on Markdown Files
+
+If you created or modified any markdown files, run prettier to ensure consistent formatting:
+
+```bash
+npx prettier --write "path/to/file.md"
+# Or for all modified markdown files:
+npx prettier --write "docs/**/*.md"
+```
+
+If `make` or prettier updates any files, include them in your commit.
 
 ### Commit and Push
 
