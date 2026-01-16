@@ -139,6 +139,34 @@ python scripts/query.py -r datafusion -q "how are errors handled in physical ope
 python scripts/query.py -r datafusion -q "memory tracking in joins"
 ```
 
+### 5. Check CI Test Failures
+
+**Always check the CI status and summarize any test failures in your review.**
+
+```bash
+# View CI check status
+gh pr checks XXXX --repo apache/datafusion
+
+# View failed check details
+gh pr checks XXXX --repo apache/datafusion --failed
+```
+
+If there are test failures:
+1. Identify which tests are failing
+2. Determine if failures are related to the PR changes or are flaky/pre-existing
+3. Include a summary of failures in your review comment
+
+Example failure summary:
+```markdown
+## CI Status
+
+The following tests are failing:
+- `test_xyz` - appears related to this PR's changes
+- `test_abc` - likely flaky (unrelated to changes)
+
+Please investigate the `test_xyz` failure.
+```
+
 ## Review Comment Templates
 
 ### Request Changes

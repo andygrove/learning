@@ -181,6 +181,34 @@ Check for:
 - [ ] configs.md updated (if new configs added)
 - [ ] All tests pass
 
+### 7. Check CI Test Failures
+
+**Always check the CI status and summarize any test failures in your review.**
+
+```bash
+# View CI check status
+gh pr checks XXXX --repo apache/datafusion-comet
+
+# View failed check details
+gh pr checks XXXX --repo apache/datafusion-comet --failed
+```
+
+If there are test failures:
+1. Identify which tests are failing
+2. Determine if failures are related to the PR changes or are flaky/pre-existing
+3. Include a summary of failures in your review comment
+
+Example failure summary:
+```markdown
+## CI Status
+
+The following tests are failing:
+- `CometExpressionSuite.test_xyz` - appears related to this PR's changes
+- `CometShuffleSuite.test_abc` - likely flaky (unrelated to changes)
+
+Please investigate the `test_xyz` failure.
+```
+
 ## Review Comment Templates
 
 ### Spark Compatibility Issue
